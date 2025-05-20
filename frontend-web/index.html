@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Garden</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff;
+    }
+
+    .loader {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader"></div>
+  <p>Đang chuyển hướng đến Smart Garden...</p>
+
+  <script>
+    setTimeout(() => {
+      const token = localStorage.getItem('accessToken'); // Kiểm tra token trong localStorage
+      if (token) {
+        window.location.href = "pages/home.html";
+      } else {
+        window.location.href = "pages/login.html";
+      }
+    }, 1500); // Chờ 1.5 giây để thấy hiệu ứng loading
+  </script>
+</body>
+</html>

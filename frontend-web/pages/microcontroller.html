@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Quản lý vi điều khiển</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/microcontroller.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky pt-3">
+                    <h4 class="text-white text-center sidebar-title">🌿 Vườn Cây Thông Minh</h4>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="home.html">
+                                <i class="bi bi-house-door"></i> Trang Chủ
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="garden.html">
+                                <i class="bi bi-tree"></i> Danh sách vườn cây
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white active" href="microcontroller.html">
+                                <i class="bi bi-cpu"></i> Quản lý vi điều khiển
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2 text-success m-0">⚙️ Quản lý vi điều khiển</h1>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addComponentModal">Thêm vi điều khiển</button>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="account.html"><i class="bi bi-person"></i> Quản Lý Người Dùng</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button class="dropdown-item text-danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Đăng Xuất</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">📋 Danh sách vi điều khiển</h5>
+                                <div class="row g-3" id="component-list">
+                                    <!-- Components will be populated here by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Thêm Vi Điều Khiển -->
+    <div class="modal fade" id="addComponentModal" tabindex="-1" aria-labelledby="addComponentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addComponentModalLabel">Thêm Vi Điều Khiển</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="add-error-message" class="alert alert-danger d-none"></div>
+                    <div class="mb-3">
+                        <label for="add-name" class="form-label">Tên Vi Điều Khiển</label>
+                        <input type="text" class="form-control" id="add-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-garden-id" class="form-label">ID Vườn</label>
+                        <input type="number" class="form-control" id="add-garden-id" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-ip-address" class="form-label">Địa chỉ IP</label>
+                        <input type="text" class="form-control" id="add-ip-address" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-status" class="form-label">Trạng Thái</label>
+                        <select class="form-select" id="add-status" required>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="addComponent()">Thêm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sửa Vi Điều Khiển -->
+    <div class="modal fade" id="editComponentModal" tabindex="-1" aria-labelledby="editComponentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editComponentModalLabel">Sửa Vi Điều Khiển</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="edit-error-message" class="alert alert-danger d-none"></div>
+                    <input type="hidden" id="edit-mcu-id">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Tên Vi Điều Khiển</label>
+                        <input type="text" class="form-control" id="edit-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-garden-id" class="form-label">ID Vườn</label>
+                        <input type="number" class="form-control" id="edit-garden-id" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-ip-address" class="form-label">Địa chỉ IP</label>
+                        <input type="text" class="form-control" id="edit-ip-address" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-status" class="form-label">Trạng Thái</label>
+                        <select class="form-select" id="edit-status" required>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" onclick="updateComponent()">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/microcontroller.js"></script>
+</body>
+</html>

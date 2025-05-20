@@ -1,0 +1,136 @@
+/* General styles */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Sidebar styles */
+.sidebar {
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    padding-top: 20px;
+    background-color: #28a745;
+}
+
+.sidebar-title {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 40px;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.sidebar .nav-link {
+    font-size: 1.1rem;
+    margin: 5px 0;
+    padding: 10px 15px;
+    color: #fff;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #218838;
+}
+
+.sidebar .nav-link.active {
+    background-color: #218838;
+    border-radius: 0;
+}
+
+/* Header section */
+.d-flex.justify-content-between.align-items-center {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Dropdown user */
+.dropdown-toggle {
+    font-size: 1.5rem;
+    color: #28a745;
+    border: none;
+    background: transparent;
+    padding: 0.25rem 0.5rem;
+}
+
+.dropdown-toggle:hover {
+    color: #218838;
+}
+
+.dropdown-menu {
+    min-width: 180px;
+}
+
+.dropdown-item i {
+    margin-right: 8px;
+}
+
+/* Component cards */
+.component-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.component-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.component-card .card-body i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.component-type {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.component-status {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.component-card .text-muted {
+    font-size: 0.75rem;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+/* Error message in modal */
+.alert.d-none {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    
+    main {
+        margin-top: 1rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dropdown {
+        margin-top: 0.5rem;
+        align-self: flex-end;
+    }
+}

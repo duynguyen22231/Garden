@@ -1,0 +1,85 @@
+/* Nền background */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  height: 100vh;
+  background: url('https://cdn.pixabay.com/photo/2018/08/21/23/29/forest-3622519_1280.jpg') no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hộp form */
+.auth-container {
+  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  width: 350px;
+  padding: 40px;
+  color: #fff;
+  transition: 0.4s ease-in-out;
+  animation: fadeIn 0.7s ease;
+}
+
+/* Tiêu đề */
+.auth-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+/* Input */
+.auth-container input {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+/* Nút */
+.auth-container button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.auth-container button:hover {
+  background-color: #45a049;
+}
+
+/* Chuyển đổi form */
+.auth-container .toggle {
+  margin-top: 20px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #dff;
+}
+
+/* Hiệu ứng fade */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hiển thị form hiện tại */
+.form {
+  display: none;
+}
+
+.form.active {
+  display: block;
+  animation: fadeIn 0.5s ease;
+}

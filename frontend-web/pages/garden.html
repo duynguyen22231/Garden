@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Danh Sách Vườn Cây</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">  
+  <link rel="stylesheet" href="../css/garden.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+        <div class="position-sticky pt-3">
+          <h4 class="text-white text-center sidebar-title">🌿 Vườn Cây Thông Minh</h4>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link text-white" href="home.html">
+                <i class="bi bi-house-door"></i> Trang Chủ
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active text-white" href="garden.html">
+                <i class="bi bi-tree"></i> Quản Lý Vườn Cây
+              </a>
+            </li>
+              <li class="nav-item">
+                <a class="nav-link text-white active" href="microcontroller.html">
+                    <i class="bi bi-cpu"></i> Quản lý vi điều khiển
+                </a>
+                </li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <!-- Header với tiêu đề và nút đăng xuất -->
+        <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+          <h1 class="h2 text-success m-0">🌿 Danh Sách Vườn Cây</h1>
+          
+          <!-- User Dropdown -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li><a class="dropdown-item" href="account.html"><i class="bi bi-person"></i> Quản Lý Người Dùng</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item text-danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Đăng Xuất</button></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Danh sách vườn cây -->
+        <div class="container mt-4">
+          <div class="mb-3">
+            <input type="text" id="searchInput" class="form-control custom-input" placeholder="🔍 Tìm kiếm theo tên vườn...">
+          </div>
+
+          <table class="table table-bordered table-hover custom-table">
+            <thead class="table-dark">
+              <tr>
+                <th>STT</th>
+                <th>Tên Vườn</th>
+                <th>Địa Chỉ</th>
+                <th>Ảnh</th>
+                <th>Ghi Chú</th>
+                <th>Diện Tích</th>
+                <th>Trạng Thái</th>
+                <th>Người Dùng</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody id="gardenTableBody"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Popup Form Sửa Vườn Cây -->
+  <div id="editGardenModal" class="popup-form card shadow p-4 rounded-3 position-fixed top-50 start-50 translate-middle d-none">
+    <h5 class="mb-3 text-success text-center">📝 Sửa Thông Tin Vườn Cây</h5>
+    <form id="gardenForm">
+      <input type="hidden" id="id" name="id">
+
+      <div class="mb-2">
+        <label for="name">Tên Vườn</label>
+        <input type="text" class="form-control custom-input" id="name" name="garden_names" required>
+      </div>
+
+      <div class="mb-2">
+        <label for="location">Địa Chỉ</label>
+        <input type="text" class="form-control custom-input" id="location" name="location" required>
+      </div>
+
+      <!-- Nhóm nhập tọa độ và nút chọn vị trí -->
+      <div class="row align-items-end">
+        <div class="col">
+          <label for="latitude">Vĩ Độ</label>
+          <input type="text" class="form-control custom-input" id="latitude" name="latitude" readonly>
+        </div>
+        <div class="col">
+          <label for="longitude">Kinh Độ</label>
+          <input type="text" class="form-control custom-input" id="longitude" name="longitude" readonly>
+        </div>
+        <div class="col-auto">
+          <label> </label>
+          <button type="button" class="btn btn-outline-primary w-100 custom-btn" onclick="openMapModal()">
+            <i class="bi bi-geo-alt-fill"></i> Chọn vị trí
+          </button>
+        </div>
+      </div>
+
+      <div id="map" style="height: 200px;" class="my-2 border rounded"></div>
+
+      <div class="mb-2">
+        <label for="area">Diện Tích (m²)</label>
+        <input type="number" class="form-control custom-input" id="area" name="area">
+      </div>
+
+      <div class="mb-2">
+        <label for="note">Ghi Chú</label>
+        <textarea class="form-control custom-textarea" id="note" name="note"></textarea>
+      </div>
+
+      <div class="mb-2">
+        <label for="statusSelect">Trạng Thái</label>
+        <select id="statusSelect" name="status" class="form-control custom-select">
+          <option value="">Chọn trạng thái</option>
+        </select>
+      </div>
+      
+      <div class="mb-2">
+        <label for="user_id">Người Dùng</label>
+        <select class="form-control custom-select" id="user_id" name="user_id">
+          <option value="">Chọn người dùng</option>
+        </select>
+      </div>
+
+      <!-- Thêm trường upload ảnh và preview -->
+      <div class="mb-2">
+        <label for="img">Ảnh Vườn Cây</label>
+        <input type="file" class="form-control custom-input" id="img" name="img" accept="image/*">
+        <img id="imagePreview" src="" alt="Xem trước ảnh" class="img-fluid mt-2" style="max-height: 150px; display: none;">
+      </div>
+
+      <div class="d-flex justify-content-between mt-3">
+        <button type="submit" class="btn btn-success custom-btn">Lưu</button>
+        <button type="button" class="btn btn-secondary custom-btn" onclick="closeEditPopup()">Đóng</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal chọn vị trí trên bản đồ -->
+  <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-success">🗺 Chọn Vị Trí Trên Bản Đồ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body">
+          <div id="leafletMap" style="height: 400px;"></div>
+          <p class="mt-3">
+            <strong>Vĩ độ:</strong> <span id="latPreview"></span>  
+            <strong>Kinh độ:</strong> <span id="lngPreview"></span>
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success custom-btn" data-bs-dismiss="modal">Xong</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/garden.js"></script>
+</body>
+</html>
