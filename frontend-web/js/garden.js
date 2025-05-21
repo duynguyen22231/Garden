@@ -167,7 +167,7 @@ function displayGardens(gardens) {
                 <button class="btn btn-sm btn-danger" onclick="deleteGarden(${garden.id})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
-                <button class="btn btn-sm btn-info" onclick="window.location.href='sensor.html?id=${garden.id}'">
+                <button class="btn btn-sm btn-info" onclick="window.location.href='sensor.html?garden_id=${garden.id}'">
                     <i class="bi bi-eye-fill"></i>
                 </button>
             </td>

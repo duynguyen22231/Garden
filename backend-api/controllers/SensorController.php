@@ -8,17 +8,16 @@ class SensorController {
         $this->model = new SensorModel($db);
     }
 
-    public function store() {
+    public function store($garden_id) {
         $input = file_get_contents("php://input");
         $data = json_decode($input, true);
 
-        if (!$data || !isset($data['sensor_id'])) {
+        if (!$data || !isset($data['sensor_id']) || !$garden_id) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ hoặc thiếu sensor_id']);
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ hoặc thiếu sensor_id/garden_id']);
             return;
         }
 
-        // Kiểm tra dữ liệu cảm biến
         $required_fields = ['soil_moisture', 'temperature', 'humidity', 'light', 'water_level_cm', 'is_raining'];
         foreach ($required_fields as $field) {
             if (isset($data[$field]) && !is_numeric($data[$field]) && $field !== 'is_raining') {
@@ -29,9 +28,9 @@ class SensorController {
         }
 
         try {
-            $success = $this->model->insertSensorData($data);
+            $success = $this->model->insertSensorData($data, $garden_id);
             if ($success) {
-                $this->checkAndInsertAlerts($data);
+                $this->checkAndInsertAlerts($data, $garden_id);
                 echo json_encode(['success' => true, 'message' => 'Gửi dữ liệu thành công']);
             } else {
                 http_response_code(500);
@@ -44,10 +43,14 @@ class SensorController {
         }
     }
 
-    public function latest() {
+    public function latest($garden_id) {
         try {
-            $data = $this->model->getLatestSensorData();
-            echo json_encode($data ? $data : ['success' => false, 'message' => 'Không có dữ liệu']);
+            $data = $this->model->getLatestSensorData($garden_id);
+            if ($data) {
+                echo json_encode(['success' => true, 'data' => $data]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Không có dữ liệu cảm biến']);
+            }
         } catch (Exception $e) {
             error_log("Lỗi trong latest: " . $e->getMessage());
             http_response_code(500);
@@ -55,10 +58,10 @@ class SensorController {
         }
     }
 
-    public function update() {
-        if (!isset($_POST['name']) || !isset($_POST['status'])) {
+    public function update($garden_id) {
+        if (!isset($_POST['name']) || !isset($_POST['status']) || !$garden_id) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Thiếu tham số name hoặc status']);
+            echo json_encode(['success' => false, 'message' => 'Thiếu tham số name, status hoặc garden_id']);
             return;
         }
 
@@ -72,7 +75,7 @@ class SensorController {
         }
 
         try {
-            $success = $this->model->updateDeviceStatus($device, $status);
+            $success = $this->model->updateDeviceStatus($device, $status, $garden_id);
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Cập nhật trạng thái thiết bị thành công']);
             } else {
@@ -85,9 +88,9 @@ class SensorController {
         }
     }
 
-    public function getStatus() {
+    public function getStatus($garden_id) {
         try {
-            $data = $this->model->getDeviceStatus();
+            $data = $this->model->getDeviceStatus($garden_id);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             error_log("Lỗi trong getStatus: " . $e->getMessage());
@@ -96,10 +99,10 @@ class SensorController {
         }
     }
 
-    public function saveSchedule() {
-        if (!isset($_POST['device']) || !isset($_POST['action']) || !isset($_POST['time']) || !isset($_POST['days'])) {
+    public function saveSchedule($garden_id) {
+        if (!isset($_POST['device']) || !isset($_POST['action']) || !isset($_POST['time']) || !isset($_POST['days']) || !$garden_id) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Thiếu tham số']);
+            echo json_encode(['success' => false, 'message' => 'Thiếu tham số hoặc garden_id']);
             return;
         }
 
@@ -123,7 +126,7 @@ class SensorController {
         }
 
         try {
-            $success = $this->model->saveSchedule($data);
+            $success = $this->model->saveSchedule($data, $garden_id);
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Lưu lịch thành công']);
             } else {
@@ -136,9 +139,9 @@ class SensorController {
         }
     }
 
-    public function getSchedules() {
+    public function getSchedules($garden_id) {
         try {
-            $data = $this->model->getSchedules();
+            $data = $this->model->getSchedules($garden_id);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             error_log("Lỗi trong getSchedules: " . $e->getMessage());
@@ -147,9 +150,9 @@ class SensorController {
         }
     }
 
-    public function getAlerts() {
+    public function getAlerts($garden_id) {
         try {
-            $data = $this->model->getAlerts();
+            $data = $this->model->getAlerts($garden_id);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             error_log("Lỗi trong getAlerts: " . $e->getMessage());
@@ -158,27 +161,26 @@ class SensorController {
         }
     }
 
-    public function updateRelay() {
-        if (!isset($_POST['garden_id']) || !isset($_POST['name']) || !isset($_POST['status'])) {
+    public function updateRelay($garden_id) {
+        if (!isset($_POST['name']) || !isset($_POST['status']) || !$garden_id) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Thiếu tham số garden_id, name hoặc status']);
+            echo json_encode(['success' => false, 'message' => 'Thiếu tham số name, status hoặc garden_id']);
             return;
         }
 
-        $garden_id = (int)$_POST['garden_id'];
         $device = $_POST['name'];
         $status = (int)$_POST['status'];
 
-        if ($garden_id <= 0 || !in_array($status, [0, 1])) {
+        if (!in_array($status, [0, 1])) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Giá trị garden_id hoặc status không hợp lệ']);
+            echo json_encode(['success' => false, 'message' => 'Giá trị status không hợp lệ']);
             return;
         }
 
         try {
             $success = $this->model->updateRelayControl($garden_id, $device, $status);
             if ($success) {
-                $this->model->updateDeviceStatus($device, $status);
+                $this->model->updateDeviceStatus($device, $status, $garden_id);
                 echo json_encode(['success' => true, 'message' => 'Cập nhật rơ-le thành công']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Cập nhật rơ-le thất bại']);
@@ -190,9 +192,9 @@ class SensorController {
         }
     }
 
-    public function getMicrocontrollers() {
+    public function getMicrocontrollers($garden_id) {
         try {
-            $data = $this->model->getMicrocontrollerStatus();
+            $data = $this->model->getMicrocontrollerStatus($garden_id);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             error_log("Lỗi trong getMicrocontrollers: " . $e->getMessage());
@@ -201,14 +203,14 @@ class SensorController {
         }
     }
 
-    private function checkAndInsertAlerts($data) {
+    private function checkAndInsertAlerts($data, $garden_id) {
         if (isset($data['soil_moisture']) && $data['soil_moisture'] < 20) {
             $message = "Độ ẩm đất thấp: {$data['soil_moisture']}% tại cảm biến {$data['sensor_id']}";
-            $this->model->insertAlert($data['sensor_id'], $message);
+            $this->model->insertAlert($data['sensor_id'], $message, $garden_id);
         }
         if (isset($data['temperature']) && $data['temperature'] > 35) {
             $message = "Nhiệt độ cao: {$data['temperature']}°C tại cảm biến {$data['sensor_id']}";
-            $this->model->insertAlert($data['sensor_id'], $message);
+            $this->model->insertAlert($data['sensor_id'], $message, $garden_id);
         }
     }
 }

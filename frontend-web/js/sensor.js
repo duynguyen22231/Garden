@@ -1,7 +1,7 @@
 /* Set active sidebar link dynamically */
 function setActiveNavLink() {
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
-    const currentPage = window.location.pathname.split('/').pop() || 'home.html';
+    const currentPage = window.location.pathname.split('/').pop() || 'sensor.html';
 
     navLinks.forEach(link => {
         link.classList.remove('active');
@@ -11,17 +11,102 @@ function setActiveNavLink() {
     });
 }
 
+// Get garden_id from URL
+function getGardenIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const gardenId = urlParams.get('garden_id') || '';
+    console.log('gardenId from URL:', gardenId); // Debug log
+    return gardenId;
+}
+
+// Load garden name and update title
+function loadGardenName(gardenId) {
+    if (!gardenId) {
+        showErrorMessage(new Error('Vui lòng chọn một vườn'));
+        window.location.href = 'garden.html';
+        return;
+    }
+    fetch('http://localhost/SmartGarden/backend-api/routes/garden.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=get_garden_by_id&id=${gardenId}`
+    })
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
+        })
+        .then(data => {
+            if (data.success && data.data) {
+                document.getElementById('garden-title').textContent = `🌱 Giám Sát & Điều Khiển - ${data.data.garden_names}`;
+            } else {
+                console.warn('Không tìm thấy dữ liệu vườn:', JSON.stringify(data));
+                showErrorMessage(new Error('Không thể tải tên vườn: ' + (data.message || 'Lỗi không xác định')));
+                window.location.href = 'garden.html';
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi tải tên vườn:', error);
+            showErrorMessage(error);
+            window.location.href = 'garden.html';
+        });
+}
+
+// Lưu trữ dữ liệu hiện tại để so sánh
+let lastSensorData = null;
+let lastDeviceStatus = null;
+let lastSchedules = null;
+let lastAlerts = null;
+let lastMicrocontrollers = null;
+
+// So sánh dữ liệu để kiểm tra thay đổi
+function hasDataChanged(newData, oldData) {
+    return JSON.stringify(newData) !== JSON.stringify(oldData);
+}
+
+// Load all data for a specific garden
+function loadGardenData(gardenId) {
+    if (!gardenId) {
+        showErrorMessage(new Error('Vui lòng chọn một vườn'));
+        window.location.href = 'garden.html';
+        return;
+    }
+    loadSensorData(gardenId);
+    loadDeviceStatus(gardenId);
+    loadSchedules(gardenId);
+    loadAlerts(gardenId);
+    loadMicrocontrollers(gardenId);
+}
+
 // Load sensor data from API
-function loadSensorData() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest')
-        .then(res => {
-            if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-            return res.json();
+function loadSensorData(gardenId) {
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`)
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
         })
         .then(data => {
             console.log('Dữ liệu cảm biến:', data);
-            if (data && !data.message) {
-                updateSensorUI(data);
+            if (data && data.success && !data.message) {
+                if (hasDataChanged(data.data, lastSensorData)) {
+                    updateSensorUI(data.data);
+                    lastSensorData = data.data;
+                }
             } else {
                 showNoDataMessage();
             }
@@ -59,16 +144,27 @@ function updateSensorUI(sensorData) {
 }
 
 // Load device status from API
-function loadDeviceStatus() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_status')
-        .then(res => {
-            if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-            return res.json();
+function loadDeviceStatus(gardenId) {
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_status&garden_id=${gardenId}`)
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
         })
         .then(data => {
             console.log('Trạng thái thiết bị:', data);
             if (data.success && data.data) {
-                updateDeviceStatusUI(data.data);
+                if (hasDataChanged(data.data, lastDeviceStatus)) {
+                    updateDeviceStatusUI(data.data);
+                    lastDeviceStatus = data.data;
+                }
             } else {
                 showNoDeviceStatusMessage();
             }
@@ -87,7 +183,8 @@ function updateDeviceStatusUI(devices) {
     statusContainer.innerHTML = `
         <h5 class="card-title text-success">🔌 Trạng thái thiết bị</h5>
         <div class="row g-3">
-            ${devices.map(device => `
+            ${devices.length === 0 ? '<div class="col-12"><p class="text-muted text-center">Không có thiết bị.</p></div>' : 
+            devices.map(device => `
                 <div class="col-4">
                     <div class="card h-100 text-center sensor-card">
                         <div class="card-body">
@@ -104,16 +201,27 @@ function updateDeviceStatusUI(devices) {
 }
 
 // Load schedules from API
-function loadSchedules() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_schedules')
-        .then(res => {
-            if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-            return res.json();
+function loadSchedules(gardenId) {
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_schedules&garden_id=${gardenId}`)
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
         })
         .then(data => {
             console.log('Danh sách lịch trình:', data);
             if (data.success && data.data) {
-                updateSchedulesUI(data.data);
+                if (hasDataChanged(data.data, lastSchedules)) {
+                    updateSchedulesUI(data.data);
+                    lastSchedules = data.data;
+                }
             } else {
                 showNoSchedulesMessage();
             }
@@ -141,7 +249,8 @@ function updateSchedulesUI(schedules) {
                 </tr>
             </thead>
             <tbody>
-                ${schedules.map(schedule => `
+                ${schedules.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có lịch trình.</td></tr>' : 
+                schedules.map(schedule => `
                     <tr>
                         <td>${schedule.device_name}</td>
                         <td>${schedule.action == 1 ? 'Bật' : 'Tắt'}</td>
@@ -155,16 +264,27 @@ function updateSchedulesUI(schedules) {
 }
 
 // Load alerts from API
-function loadAlerts() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_alerts')
-        .then(res => {
-            if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-            return res.json();
+function loadAlerts(gardenId) {
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_alerts&garden_id=${gardenId}`)
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
         })
         .then(data => {
             console.log('Cảnh báo:', data);
             if (data.success && data.data) {
-                updateAlertsUI(data.data);
+                if (hasDataChanged(data.data, lastAlerts)) {
+                    updateAlertsUI(data.data);
+                    lastAlerts = data.data;
+                }
             } else {
                 showNoAlertsMessage();
             }
@@ -183,7 +303,8 @@ function updateAlertsUI(alerts) {
     alertContainer.innerHTML = `
         <h5 class="card-title text-success">🚨 Cảnh báo</h5>
         <ul class="list-group">
-            ${alerts.map(alert => `
+            ${alerts.length === 0 ? '<li class="list-group-item text-center text-muted">Không có cảnh báo.</li>' : 
+            alerts.map(alert => `
                 <li class="list-group-item">${alert.message} - ${new Date(alert.timestamp).toLocaleString()}</li>
             `).join('')}
         </ul>
@@ -191,16 +312,27 @@ function updateAlertsUI(alerts) {
 }
 
 // Load microcontrollers from API
-function loadMicrocontrollers() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_microcontrollers')
-        .then(res => {
-            if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-            return res.json();
+function loadMicrocontrollers(gardenId) {
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_microcontrollers&garden_id=${gardenId}`)
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error(`Phản hồi không phải JSON: ${text}`);
+            }
         })
         .then(data => {
             console.log('Trạng thái vi điều khiển:', data);
             if (data.success && data.data) {
-                updateMicrocontrollersUI(data.data);
+                if (hasDataChanged(data.data, lastMicrocontrollers)) {
+                    updateMicrocontrollersUI(data.data);
+                    lastMicrocontrollers = data.data;
+                }
             } else {
                 showNoMicrocontrollersMessage();
             }
@@ -228,7 +360,8 @@ function updateMicrocontrollersUI(microcontrollers) {
                 </tr>
             </thead>
             <tbody>
-                ${microcontrollers.map(mcu => `
+                ${microcontrollers.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có vi điều khiển.</td></tr>' : 
+                microcontrollers.map(mcu => `
                     <tr>
                         <td>${mcu.name}</td>
                         <td><span class="badge ${mcu.status === 'online' ? 'bg-success' : 'bg-danger'}">${mcu.status}</span></td>
@@ -285,36 +418,52 @@ function showErrorMessage(error) {
     document.querySelectorAll('.sensor-card .card-body').forEach(card => {
         card.innerHTML = `<p class="text-danger text-center">Lỗi tải dữ liệu: ${error.message}</p>`;
     });
+    showNoDeviceStatusMessage();
+    showNoSchedulesMessage();
+    showNoAlertsMessage();
+    showNoMicrocontrollersMessage();
 }
 
 // Control relay devices
 function controlRelay(device, status) {
-    const garden_id = 1; // Thay bằng garden_id thực tế
+    const gardenId = getGardenIdFromUrl();
+    if (!gardenId) {
+        alert('Vui lòng chọn một vườn!');
+        return;
+    }
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=update_relay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `garden_id=${garden_id}&name=${device}&status=${status}`
+        body: `garden_id=${gardenId}&name=${device}&status=${status}`
     })
-        .then(res => {
-            if (!res.ok) throw new Error('Lỗi cập nhật');
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
             return res.json();
         })
         .then(data => {
             if (data.success) {
                 alert(`Đã cập nhật ${device} → ${status ? 'Bật' : 'Tắt'}`);
-                loadDeviceStatus();
+                loadDeviceStatus(gardenId); // Tải lại ngay khi có thay đổi thủ công
             } else {
                 alert('Cập nhật thất bại: ' + data.message);
             }
         })
         .catch(error => {
-            console.error('Lỗi:', error);
+            console.error('Lỗi cập nhật thiết bị:', error);
             alert('Không thể kết nối đến máy chủ!');
         });
 }
 
 // Save schedule settings
 function saveSchedule() {
+    const gardenId = getGardenIdFromUrl();
+    if (!gardenId) {
+        alert('Vui lòng chọn một vườn!');
+        return;
+    }
     const device = document.getElementById('deviceSelect').value;
     const action = document.getElementById('actionSelect').value;
     const time = document.getElementById('timeInput').value;
@@ -336,16 +485,19 @@ function saveSchedule() {
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=save_schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `device=${device}&action=${action}&time=${time}&days=${days.join(',')}`
+        body: `garden_id=${gardenId}&device=${device}&action=${action}&time=${time}&days=${days.join(',')}`
     })
-        .then(res => {
-            if (!res.ok) throw new Error('Lỗi lưu lịch');
+        .then(async res => {
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+            }
             return res.json();
         })
         .then(data => {
             if (data.success) {
                 alert(`Đã lưu lịch: ${action === '1' ? 'Bật' : 'Tắt'} ${device} lúc ${time} vào các ngày: ${days.join(', ')}`);
-                loadSchedules();
+                loadSchedules(gardenId); // Tải lại ngay khi có thay đổi thủ công
                 const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
                 modal.hide();
             } else {
@@ -353,17 +505,19 @@ function saveSchedule() {
             }
         })
         .catch(error => {
-            console.error('Lỗi:', error);
+            console.error('Lỗi lưu lịch:', error);
             alert('Không thể kết nối đến máy chủ!');
         });
 }
 
 // Check API availability
-function checkAPI() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest')
-        .then(res => {
+function checkAPI(gardenId) {
+    if (!gardenId) return;
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`)
+        .then(async res => {
             if (!res.ok) {
-                console.error('API không khả dụng');
+                const text = await res.text();
+                console.error('API không khả dụng:', text);
                 showErrorMessage(new Error('Không thể kết nối đến máy chủ'));
             }
         })
@@ -376,17 +530,14 @@ function checkAPI() {
 // Initialize when page loads
 window.onload = function() {
     setActiveNavLink();
-    checkAPI();
-    loadSensorData();
-    loadDeviceStatus();
-    loadSchedules();
-    loadAlerts();
-    loadMicrocontrollers();
-    setInterval(() => {
-        loadSensorData();
-        loadDeviceStatus();
-        loadSchedules();
-        loadAlerts();
-        loadMicrocontrollers();
-    }, 15000);
+    const gardenId = getGardenIdFromUrl();
+    if (!gardenId) {
+        showErrorMessage(new Error('Vui lòng chọn một vườn'));
+        window.location.href = 'garden.html';
+        return;
+    }
+    loadGardenName(gardenId);
+    checkAPI(gardenId);
+    loadGardenData(gardenId);
+    setInterval(() => loadGardenData(gardenId), 30000); // Tăng lên 30 giây
 };
