@@ -1,15 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
-    loadGardens();
+    const token = localStorage.getItem("accessToken");
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    const currentUserId = localStorage.getItem("currentUserId");
+
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+
+    loadGardens(isAdmin, currentUserId);
     loadStatusOptions();
-    loadUsers();
+    loadUsers(isAdmin); // Chỉ load danh sách người dùng nếu là admin
     setupImagePreview();
 
     const searchInput = document.getElementById("searchInput");
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
             const query = e.target.value.trim();
-            if (query) searchGardens(query);
-            else loadGardens();
+            if (query) searchGardens(query, isAdmin, currentUserId);
+            else loadGardens(isAdmin, currentUserId);
         });
     }
 
@@ -20,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const formData = new FormData(gardenForm);
             const id = formData.get("id");
             formData.append("action", id ? "update_garden" : "save_garden");
+            if (!isAdmin) formData.set("user_id", currentUserId); // Người dùng thường chỉ gán user_id của mình
 
             apiRequest(formData, (data) => {
                 alert(data.message);
@@ -28,12 +39,63 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("id").value = "";
                     document.getElementById("imagePreview").style.display = "none";
                     closeEditPopup();
-                    loadGardens();
+                    loadGardens(isAdmin, currentUserId);
                 }
             });
         });
     }
 });
+
+// Lưu token vào localStorage (không sử dụng vì đã đồng bộ với accessToken)
+function saveToken(token) {
+    localStorage.setItem('accessToken', token); // Thay auth_token bằng accessToken
+}
+
+function getToken() {
+    return localStorage.getItem('accessToken');
+}
+
+function apiRequest(formData, callback) {
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+
+    fetch("http://localhost/SmartGarden/backend-api/routes/garden.php", {
+        method: "POST",
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams(formData).toString()
+    })
+    .then(async res => {
+        const text = await res.text();
+        try {
+            const data = JSON.parse(text);
+            if (!data.success) {
+                if (data.message === 'Chưa đăng nhập' || data.message === 'Phiên đăng nhập không hợp lệ') {
+                    alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+                    localStorage.removeItem('accessToken');
+                    window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                callback(data);
+            }
+        } catch (e) {
+            console.error("Phản hồi không phải JSON:", text);
+            alert("Đã có lỗi xảy ra!\n" + text);
+        }
+    })
+    .catch(err => {
+        console.error("Lỗi kết nối đến API:", err);
+        alert("Không thể kết nối đến máy chủ!");
+    });
+}
 
 function loadStatusOptions() {
     const formData = new FormData();
@@ -53,7 +115,17 @@ function loadStatusOptions() {
     });
 }
 
-function loadUsers() {
+function loadUsers(isAdmin) {
+    const currentUserId = localStorage.getItem("currentUserId");
+    if (!isAdmin) {
+        const userSelect = document.getElementById("user_id");
+        if (userSelect) {
+            userSelect.value = currentUserId; // Người dùng thường chỉ chọn chính mình
+            userSelect.disabled = true;
+        }
+        return;
+    }
+
     const formData = new FormData();
     formData.append("action", "get_users");
 
@@ -91,77 +163,87 @@ function setupImagePreview() {
     });
 }
 
-function apiRequest(formData, callback) {
-    fetch("http://localhost/SmartGarden/backend-api/routes/garden.php", {
-        method: "POST",
-        body: formData,
-    })
-    .then(async res => {
-        const text = await res.text();
-        try {
-            const data = JSON.parse(text);
-            callback(data);
-        } catch (e) {
-            console.error("Phản hồi không phải JSON:", text);
-            alert("Đã có lỗi xảy ra!\n" + text);
-        }
-    })
-    .catch(err => {
-        console.error("Lỗi kết nối đến API:", err);
-        alert("Không thể kết nối đến máy chủ!");
-    });
-}
-
-function loadGardens() {
+function loadGardens(isAdmin, currentUserId) {
     const formData = new FormData();
     formData.append("action", "get_gardens");
 
     apiRequest(formData, (data) => {
         if (data.success) {
-            displayGardens(data.data);
-        } else {
-            alert(data.message);
+            displayGardens(data.data, isAdmin, currentUserId);
         }
     });
 }
 
-function searchGardens(query) {
+function searchGardens(query, isAdmin, currentUserId) {
     const formData = new FormData();
     formData.append("action", "search_gardens");
     formData.append("search", query);
 
     apiRequest(formData, (data) => {
         if (data.success) {
-            displayGardens(data.data);
-        } else {
-            alert(data.message);
+            displayGardens(data.data, isAdmin, currentUserId);
         }
     });
 }
 
-function displayGardens(gardens) {
+// Hàm lấy ảnh qua POST và trả về blob URL
+async function getGardenImageBlobUrl(gardenId) {
+    try {
+        const token = localStorage.getItem("accessToken");
+        const res = await fetch("http://localhost/SmartGarden/backend-api/routes/garden.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
+            body: new URLSearchParams({
+                action: "get_garden_image",
+                id: gardenId
+            })
+        });
+        if (!res.ok) {
+            console.error(`Lỗi lấy ảnh cho vườn ${gardenId}: HTTP ${res.status}`);
+            return '';
+        }
+        const blob = await res.blob();
+        if (blob.type.startsWith('image/')) {
+            return URL.createObjectURL(blob);
+        } else {
+            const text = await res.text();
+            console.error(`Phản hồi không phải ảnh cho vườn ${gardenId}: ${text}`);
+            return '';
+        }
+    } catch (err) {
+        console.error(`Lỗi khi lấy ảnh cho vườn ${gardenId}:`, err);
+        return '';
+    }
+}
+
+async function displayGardens(gardens, isAdmin, currentUserId) {
     const tableBody = document.getElementById("gardenTableBody");
     if (!tableBody) return;
 
     tableBody.innerHTML = "";
 
-    gardens.forEach((garden) => {
-        const imgSrc = garden.img ? `data:image/jpeg;base64,${garden.img}` : ""; // Hiển thị ảnh từ base64
+    for (const garden of gardens) {
+        // Người dùng thường chỉ thấy vườn của mình
+        if (!isAdmin && garden.user_id != currentUserId) continue;
+
+        // Lấy blob URL cho ảnh
+        const imgSrc = garden.img_url && garden.img_id ? await getGardenImageBlobUrl(garden.img_id) : '';
         const row = document.createElement("tr");
 
         row.innerHTML = `
             <td>${garden.id}</td>
             <td>${garden.garden_names}</td>
             <td>${garden.location}</td>
-            <td style="display: none;">${garden.latitude}, ${garden.longitude}</td>
-            <td>${imgSrc ? `<img src="${imgSrc}" alt="Ảnh" width="80" />` : "Không có ảnh"}</td>
+            <td>${imgSrc ? `<img src="${imgSrc}" alt="Ảnh" width="80" onerror="this.style.display='none'" />` : "Không có ảnh"}</td>
             <td>${garden.note}</td>
             <td>${garden.area} m²</td>
-            <td style="display: none;">${garden.created_at}</td>
             <td>${garden.status}</td>
             <td>${garden.owner_name}</td>
             <td>
-                <button class="btn btn-sm btn-primary" onclick='editGarden(${JSON.stringify(garden)})'>
+                <button class="btn btn-sm btn-primary" onclick="editGarden(${garden.id})">
                     <i class="bi bi-pencil-square"></i>
                 </button>
                 <button class="btn btn-sm btn-danger" onclick="deleteGarden(${garden.id})">
@@ -174,31 +256,54 @@ function displayGardens(gardens) {
         `;
 
         tableBody.appendChild(row);
-    });
+    }
 }
 
-function editGarden(garden) {
-    document.getElementById("id").value = garden.id;
-    document.getElementById("name").value = garden.garden_names;
-    document.getElementById("location").value = garden.location;
-    document.getElementById("latitude").value = garden.latitude;
-    document.getElementById("longitude").value = garden.longitude;
-    document.getElementById("area").value = garden.area;
-    document.getElementById("note").value = garden.note || "";
-    document.getElementById("user_id").value = garden.user_id;
-    document.getElementById("statusSelect").value = garden.status;
+async function editGarden(gardenId) {
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    const currentUserId = localStorage.getItem("currentUserId");
 
-    const preview = document.getElementById("imagePreview");
-    const imgSrc = garden.img ? `data:image/jpeg;base64,${garden.img}` : "";
-    if (garden.img) {
-        preview.src = imgSrc;
-        preview.style.display = "block";
-    } else {
-        preview.src = "";
-        preview.style.display = "none";
-    }
+    // Lấy thông tin vườn từ server
+    const formData = new FormData();
+    formData.append("action", "get_garden_by_id");
+    formData.append("id", gardenId);
 
-    document.getElementById("editGardenModal").classList.remove("d-none");
+    apiRequest(formData, async (data) => {
+        if (!data.success) {
+            alert(data.message || "Không thể lấy thông tin vườn!");
+            return;
+        }
+
+        const garden = data.data;
+
+        // Kiểm tra quyền trước khi chỉnh sửa
+        if (!isAdmin && garden.user_id != currentUserId) {
+            alert("Bạn không có quyền sửa vườn này!");
+            return;
+        }
+
+        document.getElementById("id").value = garden.id;
+        document.getElementById("name").value = garden.garden_names;
+        document.getElementById("location").value = garden.location;
+        document.getElementById("latitude").value = garden.latitude;
+        document.getElementById("longitude").value = garden.longitude;
+        document.getElementById("area").value = garden.area;
+        document.getElementById("note").value = garden.note || "";
+        document.getElementById("user_id").value = isAdmin ? garden.user_id : currentUserId;
+        document.getElementById("statusSelect").value = garden.status;
+
+        const preview = document.getElementById("imagePreview");
+        const imgSrc = garden.img_url && garden.img_id ? await getGardenImageBlobUrl(garden.img_id) : '';
+        if (imgSrc) {
+            preview.src = imgSrc;
+            preview.style.display = "block";
+        } else {
+            preview.src = "";
+            preview.style.display = "none";
+        }
+
+        document.getElementById("editGardenModal").classList.remove("d-none");
+    });
 }
 
 function closeEditPopup() {
@@ -209,15 +314,30 @@ function closeEditPopup() {
 }
 
 function deleteGarden(id) {
-    if (!confirm("Bạn có chắc chắn muốn xóa vườn này không?")) return;
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
+    const currentUserId = localStorage.getItem("currentUserId");
 
+    // Kiểm tra quyền trước khi xóa
     const formData = new FormData();
-    formData.append("action", "delete_garden");
+    formData.append("action", "get_garden_by_id");
     formData.append("id", id);
 
     apiRequest(formData, (data) => {
-        alert(data.message);
-        if (data.success) loadGardens();
+        if (!data.success || (!isAdmin && data.data.user_id != currentUserId)) {
+            alert("Bạn không có quyền xóa vườn này!");
+            return;
+        }
+
+        if (!confirm("Bạn có chắc chắn muốn xóa vườn này không?")) return;
+
+        const deleteFormData = new FormData();
+        deleteFormData.append("action", "delete_garden");
+        deleteFormData.append("id", id);
+
+        apiRequest(deleteFormData, (data) => {
+            alert(data.message);
+            if (data.success) loadGardens(isAdmin, currentUserId);
+        });
     });
 }
 
@@ -264,4 +384,13 @@ function updateLatLngInputs(lat, lng) {
     document.getElementById("longitude").value = lng.toFixed(6);
     document.getElementById("latPreview").innerText = lat.toFixed(6);
     document.getElementById("lngPreview").innerText = lng.toFixed(6);
+}
+
+// Hàm đăng xuất
+function logout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("currentUserId");
+    alert("Đăng xuất thành công!");
+    window.location.href = "/SmartGarden/frontend-web/pages/login.html";
 }

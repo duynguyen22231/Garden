@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("accessToken");
+    console.log("Token from localStorage:", token); // Debug
 
     if (!token) {
+        console.log("No token found, redirecting to login");
         window.location.href = "/SmartGarden/frontend-web/pages/login.html";
         return;
     }
@@ -9,25 +11,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({ 
-                action: "check_login_status",
-                token: token 
+                action: "check_login_status"
             })
         });
         const data = await res.json();
+        console.log("Check login status response:", data); // Debug
 
         if (!data.success) {
+            console.log("Login status check failed, redirecting to login");
             localStorage.removeItem('accessToken');
             window.location.href = "/SmartGarden/frontend-web/pages/login.html";
             return;
         }
 
+        // Lưu trạng thái admin
+        const isAdmin = data.data.user.is_admin;
+        localStorage.setItem('isAdmin', isAdmin);
+        localStorage.setItem('currentUserId', data.data.user.id);
+
         initMap();
-        loadUsers();
+        loadUsers(isAdmin);
         loadGardens();
-        setupImagePreview();
-        setupFormHandlers();
+        setupImagePreview(isAdmin);
+        setupFormHandlers(isAdmin);
         initChart();
     } catch (err) {
         console.error("Lỗi khi kiểm tra trạng thái đăng nhập:", err);
@@ -42,9 +53,13 @@ let currentGardenId = null;
 // Hàm lấy ảnh qua POST và trả về blob URL
 async function getGardenImageBlobUrl(gardenId) {
     try {
+        const token = localStorage.getItem("accessToken");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({
                 action: "get_garden_image",
                 id: gardenId
@@ -143,11 +158,15 @@ function setupMapClickEvent() {
 // ================== Dữ liệu cảm biến ==================
 async function loadSensorData(garden_id = currentGardenId) {
     try {
+        const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_sensor_data" });
         if (garden_id) body.append("garden_id", garden_id);
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: body
         });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -235,11 +254,15 @@ function initChart() {
 
 async function loadChartData(garden_id = currentGardenId) {
     try {
+        const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_chart_data" });
         if (garden_id) body.append("garden_id", garden_id);
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: body
         });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -270,11 +293,15 @@ async function loadChartData(garden_id = currentGardenId) {
 // ================== Cảnh báo ==================
 async function loadAlerts(garden_id = currentGardenId) {
     try {
+        const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_alerts" });
         if (garden_id) body.append("garden_id", garden_id);
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: body
         });
         if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
@@ -302,7 +329,7 @@ async function loadAlerts(garden_id = currentGardenId) {
                             li.appendChild(subLi);
                         });
                         alertsList.appendChild(li);
-                    }
+                    };
                 }
                 if (alertsList.innerHTML === "") {
                     alertsList.innerHTML = `<li class="list-group-item">Không có cảnh báo</li>`;
@@ -323,9 +350,13 @@ async function toggleIrrigation() {
         return;
     }
     try {
+        const token = localStorage.getItem("accessToken");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({ 
                 action: "toggle_irrigation",
                 garden_id: currentGardenId
@@ -344,11 +375,24 @@ async function toggleIrrigation() {
 }
 
 // ================== Các chức năng hiện có ==================
-async function loadUsers() {
+async function loadUsers(isAdmin) {
+    if (!isAdmin) {
+        // Nếu không phải admin, ẩn phần chọn người dùng
+        const ownerSelect = document.getElementById("owner_name");
+        if (ownerSelect) {
+            ownerSelect.parentElement.style.display = 'none';
+        }
+        return;
+    }
+
     try {
+        const token = localStorage.getItem("accessToken");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({ action: "get_users" })
         });
         const data = await res.json();
@@ -373,10 +417,14 @@ async function loadUsers() {
 
 async function loadGardens() {
     try {
+        const token = localStorage.getItem("accessToken");
         console.log("Gửi yêu cầu get_gardens...");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({ action: "get_gardens" })
         });
         console.log("Trạng thái HTTP:", res.status, res.statusText);
@@ -474,7 +522,7 @@ async function loadGardens() {
     }
 }
 
-function setupImagePreview() {
+function setupImagePreview(isAdmin) {
     const fileInput = document.getElementById("image_url");
     const preview = document.getElementById("imagePreview");
     if (fileInput && preview) {
@@ -495,7 +543,7 @@ function setupImagePreview() {
     }
 }
 
-function setupFormHandlers() {
+function setupFormHandlers(isAdmin) {
     const closePopup = document.getElementById("closePopup");
     if (closePopup) {
         closePopup.onclick = () => {
@@ -524,8 +572,9 @@ function setupFormHandlers() {
     const saveGardenBtn = document.getElementById("saveGardenBtn");
     if (saveGardenBtn) {
         saveGardenBtn.onclick = async () => {
+            const token = localStorage.getItem("accessToken");
             const name = document.getElementById("garden_names")?.value.trim();
-            const owner = document.getElementById("owner_name")?.value;
+            const owner = isAdmin ? document.getElementById("owner_name")?.value : localStorage.getItem('currentUserId');
             const address = document.getElementById("location")?.value.trim();
             const area = document.getElementById("area")?.value;
             const note = document.getElementById("note")?.value.trim();
@@ -553,6 +602,9 @@ function setupFormHandlers() {
             try {
                 const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
                     method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
                     body: formData
                 });
                 const data = await res.json();
@@ -572,9 +624,13 @@ function setupFormHandlers() {
 
 async function logout() {
     try {
+        const token = localStorage.getItem("accessToken");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Authorization": `Bearer ${token}`
+            },
             body: new URLSearchParams({ action: "logout" })
         });
         const data = await res.json();
@@ -583,11 +639,15 @@ async function logout() {
         }
 
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("currentUserId");
         sessionStorage.clear();
         window.location.href = "/SmartGarden/frontend-web/pages/login.html";
     } catch (err) {
         console.error("Lỗi khi đăng xuất:", err);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("currentUserId");
         sessionStorage.clear();
         window.location.href = "/SmartGarden/frontend-web/pages/login.html";
     }

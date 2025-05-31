@@ -75,22 +75,22 @@ class AuthController {
         // Tạo token tạm thời
         $token = base64_encode($user['username'] . ':' . time());
         
-        // Khởi tạo session
-        session_start();
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['token'] = $token; // Lưu token vào session để kiểm tra sau này
+        // Lưu token vào database
+        $this->authModel->saveToken($user['id'], $token);
 
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'message' => 'Đăng nhập thành công',
-            'token' => $token,
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'email' => $user['email'],
-                'full_name' => $user['full_name']
-            ]
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'full_name' => $user['full_name']
+                ]
+            ],
+            'message' => 'Đăng nhập thành công'
         ]);
     }
 }

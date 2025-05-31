@@ -8,49 +8,65 @@ class GardenModel {
         $this->conn = $db;
     }
 
-    public function getAllGardens($search = '') {
-        try {
-            if (!empty($search)) {
-                if (is_numeric($search) && (int)$search == $search) {
-                    $stmt = $this->conn->prepare("
-                        SELECT gardens.*, users.full_name AS owner_name
-                        FROM gardens
-                        JOIN users ON gardens.user_id = users.id
-                        WHERE gardens.id = :search_id
-                        ORDER BY gardens.id ASC
-                    ");
-                    $stmt->bindValue(':search_id', (int)$search, PDO::PARAM_INT);
-                } else {
-                    $stmt = $this->conn->prepare("
-                        SELECT gardens.*, users.full_name AS owner_name
-                        FROM gardens
-                        JOIN users ON gardens.user_id = users.id
-                        WHERE gardens.garden_names LIKE :search OR gardens.location LIKE :search OR users.full_name LIKE :search
-                        ORDER BY gardens.id ASC
-                    ");
-                    $stmt->bindValue(':search', '%' . $search . '%');
-                }
+    public function getAllGardens($search = '', $userId, $isAdmin) {
+    try {
+        $sql = "
+            SELECT gardens.id, gardens.garden_names, gardens.location, gardens.latitude, gardens.longitude, 
+                   gardens.area, gardens.note, gardens.status, gardens.user_id, users.full_name AS owner_name
+            FROM gardens
+            JOIN users ON gardens.user_id = users.id
+        ";
+        $params = [];
+
+        if (!$isAdmin) {
+            $sql .= " WHERE gardens.user_id = :user_id";
+            $params[':user_id'] = $userId;
+        }
+
+        if (!empty($search)) {
+            if ($isAdmin) {
+                $sql .= " WHERE (";
             } else {
-                $stmt = $this->conn->prepare("
-                    SELECT gardens.*, users.full_name AS owner_name
-                    FROM gardens
-                    JOIN users ON gardens.user_id = users.id
-                    ORDER BY gardens.id ASC
-                ");
+                $sql .= " AND (";
             }
-    
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            // Chuyển đổi dữ liệu ảnh thành base64 để hiển thị trên web
-            foreach ($results as &$garden) {
-                if ($garden['img']) {
-                    $garden['img'] = base64_encode($garden['img']); // Chuyển BLOB thành base64
-                }
+
+            if (is_numeric($search) && (int)$search == $search) {
+                $sql .= "gardens.id = :search_id";
+                $params[':search_id'] = (int)$search;
+            } else {
+                $sql .= "gardens.garden_names LIKE :search OR gardens.location LIKE :search OR users.full_name LIKE :search";
+                $params[':search'] = '%' . $search . '%';
             }
-            return $results;
-    
+            $sql .= ")";
+        }
+
+        $sql .= " ORDER BY gardens.id ASC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Thêm img_url để lấy ảnh sau
+        foreach ($results as &$garden) {
+            $garden['img_url'] = "http://localhost/SmartGarden/backend-api/routes/garden.php"; 
+            $garden['img_id'] = $garden['id']; // Lưu ID để lấy ảnh
+        }
+        return $results;
+
         } catch (PDOException $e) {
             return ['error' => $e->getMessage()];
+        }
+    }   
+
+    public function getGardenImage($garden_id) {
+        try {
+            $sql = "SELECT img FROM gardens WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id' => $garden_id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result && !empty($result['img']) ? $result['img'] : null;
+        } catch (PDOException $e) {
+            error_log("Lỗi trong getGardenImage: " . $e->getMessage());
+            return null;
         }
     }
     
@@ -76,7 +92,7 @@ class GardenModel {
 
     public function getAllUsers() {
         try {
-            $stmt = $this->conn->prepare("SELECT id, full_name FROM users");
+            $stmt = $this->conn->prepare("SELECT id, full_name FROM users WHERE administrator_rights = 0");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -94,11 +110,10 @@ class GardenModel {
         $stmt->execute([$id]);
         $garden = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($garden && $garden['img']) {
-            $garden['img'] = base64_encode($garden['img']); // Chuyển BLOB thành base64
+            $garden['img'] = base64_encode($garden['img']);
         }
         return $garden;
     }
-    
 
     public function saveGarden($data, $files) {
         $imageData = $this->uploadImage($files['img']);
@@ -139,18 +154,15 @@ class GardenModel {
     }
 
     private function uploadImage($file) {
-        // Kiểm tra nếu không có file upload
         if (!$file || $file['error'] === UPLOAD_ERR_NO_FILE) {
             return null;
         }
 
-        // Kiểm tra lỗi upload
         if ($file['error'] !== UPLOAD_ERR_OK) {
             error_log("Lỗi upload file: " . $file['error']);
             return null;
         }
 
-        // Kiểm tra loại file (chỉ cho phép ảnh)
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
         $fileType = mime_content_type($file['tmp_name']);
         if (!in_array($fileType, $allowedTypes)) {
@@ -158,14 +170,12 @@ class GardenModel {
             return null;
         }
 
-        // Kiểm tra kích thước file (tối đa 5MB)
-        $maxSize = 5 * 1024 * 1024; // 5MB
+        $maxSize = 5 * 1024 * 1024;
         if ($file['size'] > $maxSize) {
             error_log("File quá lớn: " . $file['size'] . " bytes");
             return null;
         }
 
-        // Đọc dữ liệu ảnh và trả về dưới dạng nhị phân
         $imageData = file_get_contents($file['tmp_name']);
         return $imageData;
     }

@@ -11,6 +11,11 @@ function setActiveNavLink() {
     });
 }
 
+// Get token from localStorage
+function getToken() {
+    return localStorage.getItem('accessToken');
+}
+
 // Get garden_id from URL
 function getGardenIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -26,9 +31,18 @@ function loadGardenName(gardenId) {
         window.location.href = 'garden.html';
         return;
     }
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
     fetch('http://localhost/SmartGarden/backend-api/routes/garden.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${token}`
+        },
         body: `action=get_garden_by_id&id=${gardenId}`
     })
         .then(async res => {
@@ -87,7 +101,15 @@ function loadGardenData(gardenId) {
 
 // Load sensor data from API
 function loadSensorData(gardenId) {
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -145,7 +167,15 @@ function updateSensorUI(sensorData) {
 
 // Load device status from API
 function loadDeviceStatus(gardenId) {
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_status&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_status&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -202,7 +232,15 @@ function updateDeviceStatusUI(devices) {
 
 // Load schedules from API
 function loadSchedules(gardenId) {
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_schedules&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_schedules&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -265,7 +303,15 @@ function updateSchedulesUI(schedules) {
 
 // Load alerts from API
 function loadAlerts(gardenId) {
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_alerts&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_alerts&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -313,7 +359,15 @@ function updateAlertsUI(alerts) {
 
 // Load microcontrollers from API
 function loadMicrocontrollers(gardenId) {
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_microcontrollers&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_microcontrollers&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -431,9 +485,18 @@ function controlRelay(device, status) {
         alert('Vui lòng chọn một vườn!');
         return;
     }
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=update_relay', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${token}`
+        },
         body: `garden_id=${gardenId}&name=${device}&status=${status}`
     })
         .then(async res => {
@@ -464,6 +527,12 @@ function saveSchedule() {
         alert('Vui lòng chọn một vườn!');
         return;
     }
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
     const device = document.getElementById('deviceSelect').value;
     const action = document.getElementById('actionSelect').value;
     const time = document.getElementById('timeInput').value;
@@ -484,7 +553,10 @@ function saveSchedule() {
 
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=save_schedule', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${token}`
+        },
         body: `garden_id=${gardenId}&device=${device}&action=${action}&time=${time}&days=${days.join(',')}`
     })
         .then(async res => {
@@ -513,7 +585,15 @@ function saveSchedule() {
 // Check API availability
 function checkAPI(gardenId) {
     if (!gardenId) return;
-    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`)
+    const token = getToken();
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return;
+    }
+    fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
         .then(async res => {
             if (!res.ok) {
                 const text = await res.text();
@@ -539,5 +619,14 @@ window.onload = function() {
     loadGardenName(gardenId);
     checkAPI(gardenId);
     loadGardenData(gardenId);
-    setInterval(() => loadGardenData(gardenId), 30000); // Tăng lên 30 giây
+    setInterval(() => loadGardenData(gardenId), 30000); 
 };
+
+// Hàm đăng xuất
+function logout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("currentUserId");
+    alert("Đăng xuất thành công!");
+    window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+}

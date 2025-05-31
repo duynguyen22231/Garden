@@ -1,11 +1,14 @@
 <?php
 require_once '../models/HomeModel.php';
+require_once '../models/AuthModel.php';
 
 class HomeController {
     private $model;
+    private $authModel;
 
     public function __construct() {
         $this->model = new HomeModel();
+        $this->authModel = new AuthModel();
     }
 
     public function checkLoginStatus($data) {
@@ -13,20 +16,44 @@ class HomeController {
         if (empty($token)) {
             return ['success' => false, 'message' => 'Token không được cung cấp.'];
         }
-        if (isset($_SESSION['token']) && $_SESSION['token'] === $token && isset($_SESSION['user_id'])) {
-            return ['success' => true, 'message' => 'Đăng nhập hợp lệ.'];
+
+        $tokenData = $this->authModel->findByToken($token);
+        if (!$tokenData) {
+            return ['success' => false, 'message' => 'Token không hợp lệ.'];
         }
-        return ['success' => false, 'message' => 'Chưa đăng nhập hoặc token không hợp lệ.'];
+
+        // Lấy thông tin user từ database
+        $userId = $tokenData['user_id'];
+        $user = $this->authModel->findById($userId);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Không tìm thấy user.'];
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'full_name' => $user['full_name'],
+                    'is_admin' => $user['administrator_rights'] == 1 // Trả về thông tin quyền admin
+                ]
+            ],
+            'message' => 'Đăng nhập hợp lệ.'
+        ];
     }
 
-    public function logout() {
-        session_destroy();
+    public function logout($token) {
+        if ($token) {
+            $this->authModel->deleteToken($token);
+        }
         return ['success' => true, 'message' => 'Đăng xuất thành công.'];
     }
 
-    public function getAllGardens() {
+    public function getAllGardens($userId, $isAdmin) {
         try {
-            $gardens = $this->model->getAll();
+            $gardens = $this->model->getAll($userId, $isAdmin);
             if (empty($gardens)) {
                 return ['success' => true, 'gardens' => [], 'message' => 'Không có vườn hoạt động'];
             }
@@ -37,12 +64,22 @@ class HomeController {
         }
     }
 
-    public function getGardenImage($garden_id) {
+    public function getGardenImage($garden_id, $userId, $isAdmin) {
         try {
+            // Kiểm tra quyền truy cập vườn
+            if (!$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập ảnh của vườn này']);
+                    exit;
+                }
+            }
+
             $image = $this->model->getGardenImage($garden_id);
             if ($image) {
-                header('Content-Type: image/jpeg'); // Giả sử JPEG; điều chỉnh nếu cần
-                header('Cache-Control: max-age=86400'); // Cache 24 giờ
+                header('Content-Type: image/jpeg');
+                header('Cache-Control: max-age=86400');
                 echo $image;
                 exit;
             } else {
@@ -68,7 +105,7 @@ class HomeController {
         }
     }
 
-    public function saveGarden($data, $files) {
+    public function saveGarden($data, $files, $userId, $isAdmin) {
         try {
             $imageBlob = null;
             if (!empty($files['image']['tmp_name']) && is_uploaded_file($files['image']['tmp_name'])) {
@@ -86,8 +123,13 @@ class HomeController {
                 'note' => htmlspecialchars($data['note'] ?? ''),
                 'latitude' => (float)$data['latitude'],
                 'longitude' => (float)$data['longitude'],
-                'img' => $imageBlob // Lưu dưới dạng BLOB
+                'img' => $imageBlob
             ];
+
+            // Nếu không phải admin, chỉ được thêm vườn cho chính mình
+            if (!$isAdmin) {
+                $gardenData['user_id'] = $userId;
+            }
 
             $success = $this->model->saveGarden($gardenData);
             return $success
@@ -99,9 +141,16 @@ class HomeController {
         }
     }
 
-    public function getSensorData($garden_id = null) {
+    public function getSensorData($garden_id = null, $userId, $isAdmin) {
         try {
-            $data = $this->model->getSensorData($garden_id);
+            // Kiểm tra quyền truy cập nếu chỉ định garden_id
+            if ($garden_id && !$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
+                }
+            }
+            $data = $this->model->getSensorData($garden_id, $userId, $isAdmin);
             if (empty($data) && $garden_id === null) {
                 return ['success' => false, 'message' => 'Không có vườn hoạt động nào được tìm thấy'];
             }
@@ -112,9 +161,16 @@ class HomeController {
         }
     }
 
-    public function getChartData($garden_id = null) {
+    public function getChartData($garden_id = null, $userId, $isAdmin) {
         try {
-            $data = $this->model->getChartData($garden_id);
+            // Kiểm tra quyền truy cập nếu chỉ định garden_id
+            if ($garden_id && !$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
+                }
+            }
+            $data = $this->model->getChartData($garden_id, $userId, $isAdmin);
             if (empty($data) && $garden_id === null) {
                 return ['success' => false, 'message' => 'Không có vườn hoạt động nào được tìm thấy'];
             }
@@ -125,9 +181,16 @@ class HomeController {
         }
     }
 
-    public function getAlerts($garden_id = null) {
+    public function getAlerts($garden_id = null, $userId, $isAdmin) {
         try {
-            $alerts = $this->model->getAlerts($garden_id);
+            // Kiểm tra quyền truy cập nếu chỉ định garden_id
+            if ($garden_id && !$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
+                }
+            }
+            $alerts = $this->model->getAlerts($garden_id, $userId, $isAdmin);
             if (empty($alerts) && $garden_id === null) {
                 return ['success' => false, 'message' => 'Không có vườn hoạt động nào được tìm thấy'];
             }
@@ -138,10 +201,17 @@ class HomeController {
         }
     }
 
-    public function toggleIrrigation($garden_id) {
+    public function toggleIrrigation($garden_id, $userId, $isAdmin) {
         try {
             if (!$garden_id) {
                 return ['success' => false, 'message' => 'Yêu cầu garden_id để điều khiển tưới'];
+            }
+            // Kiểm tra quyền truy cập
+            if (!$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    return ['success' => false, 'message' => 'Bạn không có quyền điều khiển tưới vườn này'];
+                }
             }
             $success = $this->model->toggleIrrigation($garden_id);
             return ['success' => $success, 'message' => $success ? 'Điều khiển tưới thành công' : 'Lỗi khi điều khiển tưới'];

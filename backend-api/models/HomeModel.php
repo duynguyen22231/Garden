@@ -13,7 +13,7 @@ class HomeModel {
         $this->conn = $conn;
     }
 
-    public function getAll() {
+    public function getAll($userId, $isAdmin) {
         try {
             error_log("Bắt đầu lấy thông tin vườn cây");
             $sql = "SELECT gardens.id, gardens.garden_names, gardens.location, gardens.longitude, 
@@ -22,8 +22,15 @@ class HomeModel {
                     FROM gardens
                     LEFT JOIN users ON gardens.user_id = users.id
                     WHERE gardens.status = 'Hoạt động'";
+            
+            $params = [];
+            if (!$isAdmin) {
+                $sql .= " AND gardens.user_id = :user_id";
+                $params[':user_id'] = $userId;
+            }
+
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             // Thêm img_url cho ảnh BLOB
             foreach ($result as &$garden) {
@@ -38,6 +45,18 @@ class HomeModel {
         } catch (PDOException $e) {
             error_log("Lỗi trong getAll: " . $e->getMessage());
             return [];
+        }
+    }
+
+    public function getGardenById($garden_id) {
+        try {
+            $sql = "SELECT * FROM gardens WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id' => $garden_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi trong getGardenById: " . $e->getMessage());
+            return null;
         }
     }
 
@@ -88,7 +107,7 @@ class HomeModel {
         }
     }
 
-    public function getSensorData($garden_id = null) {
+    public function getSensorData($garden_id = null, $userId, $isAdmin) {
         try {
             $result = [];
             if ($garden_id !== null) {
@@ -122,7 +141,7 @@ class HomeModel {
                     'irrigation' => 0
                 ];
             } else {
-                $gardens = $this->getAll();
+                $gardens = $this->getAll($userId, $isAdmin);
                 foreach ($gardens as $garden) {
                     $sql = "SELECT soil_moisture, temperature, humidity
                             FROM sensor_readings
@@ -162,7 +181,7 @@ class HomeModel {
         }
     }
 
-    public function getChartData($garden_id = null) {
+    public function getChartData($garden_id = null, $userId, $isAdmin) {
         try {
             $result = [];
             if ($garden_id !== null) {
@@ -194,7 +213,7 @@ class HomeModel {
                     'humidity' => $humidity
                 ];
             } else {
-                $gardens = $this->getAll();
+                $gardens = $this->getAll($userId, $isAdmin);
                 foreach ($gardens as $garden) {
                     $sql = "SELECT soil_moisture, temperature, humidity, created_at
                             FROM sensor_readings
@@ -232,7 +251,7 @@ class HomeModel {
         }
     }
 
-    public function getAlerts($garden_id = null) {
+    public function getAlerts($garden_id = null, $userId, $isAdmin) {
         try {
             $result = [];
             if ($garden_id !== null) {
@@ -251,7 +270,7 @@ class HomeModel {
                 $stmt->execute([':garden_id' => $garden_id]);
                 $result[$garden_id] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
             } else {
-                $gardens = $this->getAll();
+                $gardens = $this->getAll($userId, $isAdmin);
                 foreach ($gardens as $garden) {
                     $sql = "SELECT message, 
                                    CASE 
