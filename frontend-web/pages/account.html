@@ -40,7 +40,7 @@
                 <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2 text-success m-0">👤 Quản lý Người Dùng</h1>
                     <div class="d-flex gap-2 align-items-center">
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal" id="add-user-btn">Thêm Người Dùng</button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal" id="add-user-btn" style="display: none;">Thêm Người Dùng</button>
                         <div class="dropdown">
                             <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle"></i>
@@ -59,6 +59,7 @@
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title text-success">📋 Danh sách Người Dùng</h5>
+                                <div id="permission-error" class="alert alert-danger d-none">Bạn không có quyền truy cập trang này. Vui lòng đăng nhập với tài khoản admin.</div>
                                 <div class="row g-3" id="account-list">
                                     <!-- Users will be populated here by JS -->
                                 </div>

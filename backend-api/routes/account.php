@@ -2,18 +2,46 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+// Require controller
 require_once '../controllers/AccountController.php';
-
-$action = isset($_GET['action']) ? $_GET['action'] : '';
-$controller = new AccountController();
 
 // Xử lý request OPTIONS cho CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
+
+// Lấy token từ header Authorization
+function getBearerToken() {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+        if (preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
+            return $matches[1];
+        }
+    }
+    return null;
+}
+
+// Kiểm tra token (logic đơn giản, không dùng JWT)
+function validateToken($token) {
+    // Giả lập kiểm tra token: chỉ kiểm tra xem token có tồn tại không
+    return !empty($token); // Nếu token rỗng, trả về false
+}
+
+// Kiểm tra token
+$token = getBearerToken();
+if (!$token || !validateToken($token)) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.'
+    ]);
+    exit;
+}
+
+$controller = new AccountController();
 
 // Đảm bảo chỉ xử lý request POST cho các hành động add, update, delete
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $action !== 'status') {
@@ -23,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $action !== 'status') {
     ]);
     exit;
 }
+
+$action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
     case 'status':

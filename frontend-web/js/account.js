@@ -1,4 +1,3 @@
-/* Set active sidebar link dynamically */
 function setActiveNavLink() {
     const navLinks = document.querySelectorAll('.sidebar .nav-link');
     const currentPage = window.location.pathname.split('/').pop() || 'home.html';
@@ -11,18 +10,68 @@ function setActiveNavLink() {
     });
 }
 
+// Get token from localStorage
+function getToken() {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return null;
+    }
+    return token;
+}
+
+// Get user info
+function getUserInfo() {
+    return {
+        isAdmin: localStorage.getItem('isAdmin') === 'true',
+        currentUserId: localStorage.getItem('currentUserId')
+    };
+}
+
 // Load account status from API
 function loadUserStatus() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status')
+    const token = getToken();
+    if (!token) return;
+
+    const { isAdmin, currentUserId } = getUserInfo();
+    const permissionError = document.getElementById('permission-error');
+    const accountList = document.getElementById('account-list');
+    const addUserBtn = document.getElementById('add-user-btn');
+
+    if (!isAdmin && !currentUserId) {
+        permissionError.classList.remove('d-none');
+        accountList.innerHTML = '';
+        addUserBtn.style.display = 'none';
+        return;
+    }
+
+    permissionError.classList.add('d-none');
+    addUserBtn.style.display = isAdmin ? 'inline-block' : 'none';
+
+    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        method: 'POST',
+        body: JSON.stringify({ currentUserId: currentUserId || '' })
+    })
         .then(res => {
             if (!res.ok) {
                 throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
+            }
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Phản hồi từ server không phải JSON');
             }
             return res.json();
         })
         .then(data => {
             if (data.success) {
-                updateUserList(data.data);
+                let users = data.data;
+                // Nếu không phải admin, chỉ hiển thị tài khoản của người dùng hiện tại
+                if (!isAdmin && currentUserId) {
+                    users = users.filter(user => user.id == currentUserId);
+                }
+                updateUserList(users);
             } else {
                 showErrorMessage(data.message);
             }
@@ -39,8 +88,10 @@ function updateUserList(users) {
     userList.innerHTML = '';
 
     users.forEach(user => {
+        const { isAdmin, currentUserId } = getUserInfo();
         const roleText = user.administrator_rights ? 'Admin' : 'Người Dùng';
         const imgSrc = user.img_user ? `data:image/jpeg;base64,${user.img_user}` : '';
+        const isCurrentUser = user.id == currentUserId;
         const card = `
             <div class="col-4">
                 <div class="card h-100 user-card">
@@ -52,10 +103,12 @@ function updateUserList(users) {
                         <p class="card-text user-role">Vai trò: ${roleText}</p>
                         <p class="card-text">Email: ${user.email}</p>
                         <p class="card-text">Họ tên: ${user.full_name}</p>
-                        <p class="text-muted small">Tham gia: ${user.created_at}</p>
+                        <p class="text-muted small">Tham gia: ${new Date(user.created_at).toLocaleString()}</p>
                         <div class="action-buttons">
-                            <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(user)})'>Sửa</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Xóa</button>
+                            ${isCurrentUser || isAdmin ? `
+                                <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(user)})'>Sửa</button>
+                                ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Xóa</button>` : ''}
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -72,11 +125,24 @@ function showErrorMessage(message) {
 
 // Check API availability
 function checkAPI() {
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status')
+    const token = getToken();
+    if (!token) return;
+
+    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        method: 'POST',
+        body: JSON.stringify({ currentUserId: getUserInfo().currentUserId || '' })
+    })
         .then(res => {
             if (!res.ok) {
                 console.error('API không khả dụng');
-                showErrorMessage('Không thể kết nối đến máy chủ');
+                const contentType = res.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Phản hồi từ server không phải JSON');
+                }
+                return res.json().then(data => {
+                    throw new Error(data.message || 'Không thể kết nối đến máy chủ');
+                });
             }
         })
         .catch(error => {
@@ -87,11 +153,16 @@ function checkAPI() {
 
 // Add user
 function addUser() {
+    const { isAdmin } = getUserInfo();
+    if (!isAdmin) {
+        alert("Bạn không có quyền thực hiện hành động này!");
+        return;
+    }
+
     const formData = new FormData(document.getElementById('add-user-form'));
     const errorMessage = document.getElementById('add-error-message');
     const imgUser = document.getElementById('add-img-user');
 
-    // Kiểm tra định dạng ảnh
     if (imgUser.files.length > 0) {
         const file = imgUser.files[0];
         const validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
@@ -103,11 +174,21 @@ function addUser() {
         formData.append('img_user', file);
     }
 
+    const token = getToken();
+    if (!token) return;
+
     fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=add', {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Phản hồi từ server không phải JSON');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
@@ -129,6 +210,12 @@ function addUser() {
 
 // Open edit modal
 function openEditModal(user) {
+    const { isAdmin, currentUserId } = getUserInfo();
+    if (!isAdmin && user.id != currentUserId) {
+        alert("Bạn chỉ có thể sửa thông tin của chính mình!");
+        return;
+    }
+
     if (!user.id) {
         console.error('Lỗi: user.id không tồn tại', user);
         alert('Không thể mở modal sửa vì ID người dùng không hợp lệ.');
@@ -149,11 +236,18 @@ function openEditModal(user) {
 
 // Update user
 function updateUser() {
+    const { isAdmin, currentUserId } = getUserInfo();
     const formData = new FormData(document.getElementById('edit-user-form'));
     const errorMessage = document.getElementById('edit-error-message');
     const imgUser = document.getElementById('edit-img-user');
+    const id = formData.get('id');
 
-    // Kiểm tra định dạng ảnh
+    if (!isAdmin && id != currentUserId) {
+        errorMessage.textContent = 'Bạn chỉ có thể chỉnh sửa thông tin của chính mình!';
+        errorMessage.classList.remove('d-none');
+        return;
+    }
+
     if (imgUser.files.length > 0) {
         const file = imgUser.files[0];
         const validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
@@ -165,19 +259,27 @@ function updateUser() {
         formData.append('img_user', file);
     }
 
-    // Kiểm tra xem id có được gửi không
-    const id = formData.get('id');
     if (!id) {
         errorMessage.textContent = 'Lỗi: ID người dùng không được gửi.';
         errorMessage.classList.remove('d-none');
         return;
     }
 
+    const token = getToken();
+    if (!token) return;
+
     fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=update', {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
     })
-    .then(res => res.json())
+    .then(res => {
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Phản hồi từ server không phải JSON');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
@@ -204,14 +306,32 @@ function updateUser() {
 
 // Delete user
 function deleteUser(id) {
+    const { isAdmin } = getUserInfo();
+    if (!isAdmin) {
+        alert("Bạn không có quyền thực hiện hành động này!");
+        return;
+    }
+
     if (!confirm('Bạn có chắc muốn xóa người dùng này?')) return;
+
+    const token = getToken();
+    if (!token) return;
 
     fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ id })
     })
-    .then(res => res.json())
+    .then(res => {
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Phản hồi từ server không phải JSON');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.success) {
             loadUserStatus();
@@ -229,5 +349,14 @@ window.onload = function() {
     setActiveNavLink();
     checkAPI();
     loadUserStatus();
-    setInterval(loadUserStatus, 30000); // Cập nhật mỗi 30 giây
+    setInterval(loadUserStatus, 30000);
 };
+
+// Hàm đăng xuất
+function logout() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("currentUserId");
+    alert("Đăng xuất thành công!");
+    window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+}

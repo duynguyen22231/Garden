@@ -8,6 +8,17 @@ class GardenModel {
         $this->conn = $db;
     }
 
+    public function getGardensByIds($ids) {
+        if (empty($ids) || !is_array($ids)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $query = "SELECT id, garden_names, user_id FROM gardens WHERE id IN ($placeholders)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute($ids);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAllGardens($search = '', $userId, $isAdmin) {
     try {
         $sql = "

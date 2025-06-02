@@ -8,6 +8,17 @@ class GardenController {
         $this->model = new GardenModel($db);
     }
 
+    public function getGardensByIds($ids) {
+        try {
+            $data = $this->model->getGardensByIds($ids);
+            echo json_encode(['success' => true, 'data' => $data]);
+        } catch (Exception $e) {
+            error_log("Lỗi getGardensByIds: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi lấy danh sách vườn: ' . $e->getMessage()]);
+        }
+    }
+
     public function getGardens($search = '', $userId, $isAdmin) {
         $data = $this->model->getAllGardens($search, $userId, $isAdmin);
         echo json_encode(['success' => true, 'data' => $data]);

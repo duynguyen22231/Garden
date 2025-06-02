@@ -621,7 +621,6 @@ window.onload = function() {
     loadGardenData(gardenId);
     setInterval(() => loadGardenData(gardenId), 30000); 
 };
-
 // Hàm đăng xuất
 function logout() {
     localStorage.removeItem("accessToken");

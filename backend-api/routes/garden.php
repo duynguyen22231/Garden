@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Authorization, Content-Type');
+header('Access-Control-Allow-Headers: Authorization, Content-Type, Is-Admin, Current-User-Id');
 
 // Xử lý yêu cầu OPTIONS cho CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -46,10 +46,41 @@ if (!$user) {
 }
 $isAdmin = $user['administrator_rights'] == 1;
 
+// Sử dụng header nếu có
+$isAdmin = isset($headers['Is-Admin']) ? ($headers['Is-Admin'] === 'true') : $isAdmin;
+$userId = $headers['Current-User-Id'] ?? $userId;
+
+// Lấy action từ body JSON nếu có, ưu tiên khi Content-Type là application/json
+$action = '';
+$input = json_decode(file_get_contents('php://input'), true);
+if ($input && isset($input['action']) && $_SERVER['CONTENT_TYPE'] === 'application/json') {
+    $action = $input['action'];
+} elseif (isset($_POST['action'])) {
+    $action = $_POST['action'];
+}
+
 $controller = new GardenController($conn);
-$action = $_POST['action'] ?? '';
 
 switch ($action) {
+    case 'get_all_gardens':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
+            exit;
+        }
+        $controller->getGardens(null, $userId, $isAdmin);
+        break;
+
+    case 'get_gardens_by_ids':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
+            exit;
+        }
+        $ids = explode(',', $_POST['ids'] ?? '');
+        $controller->getGardensByIds($ids);
+        break;
+
     case 'search_gardens':
         $searchQuery = $_POST['search'] ?? '';
         if ($searchQuery) {
@@ -124,7 +155,6 @@ switch ($action) {
         break;
 
     case 'get_users':
-        // Chỉ admin mới được phép lấy danh sách người dùng
         if (!$isAdmin) {
             echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập danh sách người dùng']);
         } else {
