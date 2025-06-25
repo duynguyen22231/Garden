@@ -1,5 +1,5 @@
 <?php
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 class HomeModel {
     private $conn;
@@ -7,315 +7,297 @@ class HomeModel {
     public function __construct() {
         global $conn;
         if (!$conn instanceof PDO) {
-            error_log("Lỗi: Không thể lấy kết nối cơ sở dữ liệu trong HomeModel. \$conn không phải là PDO instance.");
-            throw new Exception("Không thể kết nối cơ sở dữ liệu");
+            error_log("HomeModel: Database connection is not a PDO instance");
+            throw new Exception("Không thể kết nối đến cơ sở dữ liệu.");
         }
         $this->conn = $conn;
     }
 
+    public function userExists($userId) {
+        try {
+            $stmt = $this->conn->prepare("SELECT id FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $exists = $stmt->fetchColumn() !== false;
+            error_log("userExists: userId=$userId, exists=" . ($exists ? 'true' : 'false'));
+            return $exists;
+        } catch (PDOException $e) {
+            error_log("userExists: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi kiểm tra người dùng: " . $e->getMessage());
+        }
+    }
+
     public function getAll($userId, $isAdmin) {
         try {
-            error_log("Bắt đầu lấy thông tin vườn cây");
-            $sql = "SELECT gardens.id, gardens.garden_names, gardens.location, gardens.longitude, 
-                           gardens.latitude, gardens.note, gardens.area, gardens.created_at, 
-                           gardens.status, gardens.user_id, gardens.img, users.full_name AS owner_name
-                    FROM gardens
-                    LEFT JOIN users ON gardens.user_id = users.id
-                    WHERE gardens.status = 'Hoạt động'";
-            
+            error_log("getAll: Fetching gardens for userId=$userId, isAdmin=$isAdmin");
+            $sql = "SELECT g.id, g.garden_names, g.location, g.longitude, g.latitude, g.note, g.area, 
+                           g.created_at, g.status, g.user_id, g.img, u.full_name AS owner_name
+                    FROM gardens g
+                    LEFT JOIN users u ON g.user_id = u.id
+                    WHERE g.status = 'Hoạt động'";
             $params = [];
             if (!$isAdmin) {
-                $sql .= " AND gardens.user_id = :user_id";
+                $sql .= " AND g.user_id = :user_id";
                 $params[':user_id'] = $userId;
             }
-
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            // Thêm img_url cho ảnh BLOB
-            foreach ($result as &$garden) {
+            $gardens = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($gardens as &$garden) {
                 $garden['img_url'] = !empty($garden['img']) 
-                    ? "http://localhost/SmartGarden/backend-api/routes/home.php" // Sẽ dùng POST
+                    ? 'data:image/jpeg;base64,' . base64_encode($garden['img'])
                     : '';
-                $garden['img_id'] = $garden['id']; // Lưu ID để dùng trong POST
-                unset($garden['img']); // Xóa dữ liệu BLOB để giảm kích thước JSON
+                $garden['img_id'] = $garden['id'];
+                unset($garden['img']);
             }
-            error_log("Số vườn lấy được: " . count($result));
-            return $result;
+            error_log("getAll: Found " . count($gardens) . " gardens");
+            return $gardens;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getAll: " . $e->getMessage());
-            return [];
+            error_log("getAll: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy danh sách vườn: " . $e->getMessage());
         }
     }
 
-    public function getGardenById($garden_id) {
+    public function getGardenById($gardenId) {
         try {
-            $sql = "SELECT * FROM gardens WHERE id = :id";
+            $sql = "SELECT id, user_id, garden_names, location, area, latitude, longitude, note, status 
+                    FROM gardens WHERE id = :id AND status = 'Hoạt động'";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([':id' => $garden_id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([':id' => $gardenId]);
+            $garden = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("getGardenById: gardenId=$gardenId, found=" . ($garden ? 'true' : 'false'));
+            if (!$garden) {
+                throw new Exception("Không tìm thấy vườn với ID: $gardenId");
+            }
+            return $garden;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getGardenById: " . $e->getMessage());
-            return null;
+            error_log("getGardenById: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy thông tin vườn: " . $e->getMessage());
         }
     }
 
-    public function getGardenImage($garden_id) {
+    public function getGardenImage($gardenId) {
         try {
-            $sql = "SELECT img FROM gardens WHERE id = :id";
+            $sql = "SELECT img FROM gardens WHERE id = :id AND status = 'Hoạt động'";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([':id' => $garden_id]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result && !empty($result['img']) ? $result['img'] : null;
+            $stmt->execute([':id' => $gardenId]);
+            $image = $stmt->fetchColumn();
+            error_log("getGardenImage: gardenId=$gardenId, found=" . ($image !== false ? 'true' : 'false'));
+            if ($image === false) {
+                throw new Exception("Không tìm thấy ảnh cho vườn ID: $gardenId");
+            }
+            return $image;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getGardenImage: " . $e->getMessage());
-            return null;
+            error_log("getGardenImage: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy ảnh vườn: " . $e->getMessage());
         }
     }
 
     public function getAllUsers() {
         try {
-            $sql = "SELECT id, full_name FROM users WHERE administrator_rights = 0";
+            $sql = "SELECT id, username, email, full_name, administrator_rights 
+                    FROM users";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("getAllUsers: Found " . count($users) . " users");
+            return $users;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getAllUsers: " . $e->getMessage());
-            return [];
+            error_log("getAllUsers: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy danh sách người dùng: " . $e->getMessage());
         }
     }
 
     public function saveGarden($data) {
         try {
-            $sql = "INSERT INTO gardens (garden_names, user_id, location, area, note, latitude, longitude, img, status)
-                    VALUES (:name, :user_id, :location, :area, :note, :latitude, :longitude, :img, 'Hoạt động')";
+            $this->conn->beginTransaction();
+            $sql = "INSERT INTO gardens (user_id, garden_names, location, area, note, latitude, longitude, img, status, created_at)
+                    VALUES (:user_id, :garden_names, :location, :area, :note, :latitude, :longitude, :img, 'Hoạt động', NOW())";
             $stmt = $this->conn->prepare($sql);
             $result = $stmt->execute([
-                ':name' => $data['name'],
                 ':user_id' => $data['user_id'],
-                ':location' => $data['location'],
-                ':area' => $data['area'],
-                ':note' => empty($data['note']) ? 'Không có ghi chú' : $data['note'],
+                ':garden_names' => $data['name'],
+                ':location' => $data['location'] ?? null,
+                ':area' => $data['area'] ?? null,
+                ':note' => $data['note'] ?? 'Không có ghi chú',
                 ':latitude' => $data['latitude'],
                 ':longitude' => $data['longitude'],
-                ':img' => $data['img'] // BLOB data
+                ':img' => $data['img'] ?? null
             ]);
+            error_log("saveGarden: user_id={$data['user_id']}, garden_names={$data['name']}, success=" . ($result ? 'true' : 'false'));
+            $this->conn->commit();
             return $result;
         } catch (PDOException $e) {
-            error_log("Lỗi trong saveGarden: " . $e->getMessage());
-            return false;
+            $this->conn->rollBack();
+            error_log("saveGarden: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lưu vườn: " . $e->getMessage());
         }
     }
 
-    public function getSensorData($garden_id = null, $userId, $isAdmin) {
+    public function getSensorData($gardenId, $userId, $isAdmin) {
         try {
-            $result = [];
-            if ($garden_id !== null) {
-                $sql = "SELECT soil_moisture, temperature, humidity
-                        FROM sensor_readings
-                        WHERE garden_id = :garden_id
-                        ORDER BY created_at DESC
-                        LIMIT 1";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([':garden_id' => $garden_id]);
-                $sensor_data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                $sql_relay = "SELECT status
-                             FROM relay_controls
-                             WHERE garden_id = :garden_id
-                             ORDER BY updated_at DESC
-                             LIMIT 1";
-                $stmt_relay = $this->conn->prepare($sql_relay);
-                $stmt_relay->execute([':garden_id' => $garden_id]);
-                $relay = $stmt_relay->fetch(PDO::FETCH_ASSOC);
-
-                $result[$garden_id] = $sensor_data ? [
-                    'temperature' => $sensor_data['temperature'] ?? 0,
-                    'soil_moisture' => $sensor_data['soil_moisture'] ?? 0,
-                    'humidity' => $sensor_data['humidity'] ?? 0,
-                    'irrigation' => $relay['status'] ?? 0
-                ] : [
-                    'temperature' => 0,
-                    'soil_moisture' => 0,
-                    'humidity' => 0,
-                    'irrigation' => 0
-                ];
-            } else {
-                $gardens = $this->getAll($userId, $isAdmin);
-                foreach ($gardens as $garden) {
-                    $sql = "SELECT soil_moisture, temperature, humidity
-                            FROM sensor_readings
-                            WHERE garden_id = :garden_id
-                            ORDER BY created_at DESC
-                            LIMIT 1";
-                    $stmt = $this->conn->prepare($sql);
-                    $stmt->execute([':garden_id' => $garden['id']]);
-                    $sensor_data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                    $sql_relay = "SELECT status
-                                 FROM relay_controls
-                                 WHERE garden_id = :garden_id
-                                 ORDER BY updated_at DESC
-                                 LIMIT 1";
-                    $stmt_relay = $this->conn->prepare($sql_relay);
-                    $stmt_relay->execute([':garden_id' => $garden['id']]);
-                    $relay = $stmt_relay->fetch(PDO::FETCH_ASSOC);
-
-                    $result[$garden['id']] = $sensor_data ? [
-                        'temperature' => $sensor_data['temperature'] ?? 0,
-                        'soil_moisture' => $sensor_data['soil_moisture'] ?? 0,
-                        'humidity' => $sensor_data['humidity'] ?? 0,
-                        'irrigation' => $relay['status'] ?? 0
-                    ] : [
-                        'temperature' => 0,
-                        'soil_moisture' => 0,
-                        'humidity' => 0,
-                        'irrigation' => 0
-                    ];
-                }
+            $gardenIds = $gardenId ? [$gardenId] : array_column($this->getAll($userId, $isAdmin), 'id');
+            if (empty($gardenIds)) {
+                error_log("getSensorData: No gardens found for userId=$userId, gardenId=" . ($gardenId ?? 'null'));
+                return [];
             }
+
+            $sql = "SELECT garden_id, soil_moisture, temperature, humidity
+                    FROM sensor_readings
+                    WHERE garden_id IN (" . implode(',', array_fill(0, count($gardenIds), '?')) . ")
+                    AND created_at = (
+                        SELECT MAX(created_at)
+                        FROM sensor_readings
+                        WHERE garden_id = sensor_readings.garden_id
+                    )";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($gardenIds);
+            $sensorData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $sql_relay = "SELECT garden_id, status
+                          FROM relay_controls
+                          WHERE garden_id IN (" . implode(',', array_fill(0, count($gardenIds), '?')) . ")
+                          AND updated_at = (
+                              SELECT MAX(updated_at)
+                              FROM relay_controls
+                              WHERE garden_id = relay_controls.garden_id
+                          )";
+            $stmt_relay = $this->conn->prepare($sql_relay);
+            $stmt_relay->execute($gardenIds);
+            $relayData = $stmt_relay->fetchAll(PDO::FETCH_ASSOC);
+
+            $result = [];
+            foreach ($gardenIds as $gid) {
+                $sensor = array_filter($sensorData, fn($row) => $row['garden_id'] == $gid);
+                $sensor = reset($sensor) ?: [];
+                $relay = array_filter($relayData, fn($row) => $row['garden_id'] == $gid);
+                $relay = reset($relay) ?: [];
+
+                $result[$gid] = [
+                    'temperature' => $sensor['temperature'] ?? 0,
+                    'soil_moisture' => $sensor['soil_moisture'] ?? 0,
+                    'humidity' => $sensor['humidity'] ?? 0,
+                    'irrigation' => $relay['status'] ?? 0
+                ];
+            }
+
+            error_log("getSensorData: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($result));
             return $result;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getSensorData: " . $e->getMessage());
-            return [];
+            error_log("getSensorData: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy dữ liệu cảm biến: " . $e->getMessage());
         }
     }
 
-    public function getChartData($garden_id = null, $userId, $isAdmin) {
+    public function getChartData($gardenId, $userId, $isAdmin) {
         try {
-            $result = [];
-            if ($garden_id !== null) {
-                $sql = "SELECT soil_moisture, temperature, humidity, created_at
-                        FROM sensor_readings
-                        WHERE garden_id = :garden_id
-                        AND created_at >= NOW() - INTERVAL 24 HOUR
-                        ORDER BY created_at ASC";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([':garden_id' => $garden_id]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $gardenIds = $gardenId ? [$gardenId] : array_column($this->getAll($userId, $isAdmin), 'id');
+            if (empty($gardenIds)) {
+                error_log("getChartData: No gardens found for userId=$userId, gardenId=" . ($gardenId ?? 'null'));
+                return [];
+            }
 
+            $sql = "SELECT garden_id, soil_moisture, temperature, humidity, created_at
+                    FROM sensor_readings
+                    WHERE garden_id IN (" . implode(',', array_fill(0, count($gardenIds), '?')) . ")
+                    AND created_at >= NOW() - INTERVAL 24 HOUR
+                    ORDER BY garden_id, created_at ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($gardenIds);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $result = [];
+            foreach ($gardenIds as $gid) {
+                $data = array_filter($rows, fn($row) => $row['garden_id'] == $gid);
                 $labels = [];
                 $temperature = [];
                 $soil_moisture = [];
                 $humidity = [];
 
-                foreach ($results as $row) {
+                foreach ($data as $row) {
                     $labels[] = date("H:i", strtotime($row['created_at']));
                     $temperature[] = $row['temperature'] ?? 0;
                     $soil_moisture[] = $row['soil_moisture'] ?? 0;
                     $humidity[] = $row['humidity'] ?? 0;
                 }
 
-                $result[$garden_id] = [
+                $result[$gid] = [
                     'labels' => $labels,
                     'temperature' => $temperature,
                     'soil_moisture' => $soil_moisture,
                     'humidity' => $humidity
                 ];
-            } else {
-                $gardens = $this->getAll($userId, $isAdmin);
-                foreach ($gardens as $garden) {
-                    $sql = "SELECT soil_moisture, temperature, humidity, created_at
-                            FROM sensor_readings
-                            WHERE garden_id = :garden_id
-                            AND created_at >= NOW() - INTERVAL 24 HOUR
-                            ORDER BY created_at ASC";
-                    $stmt = $this->conn->prepare($sql);
-                    $stmt->execute([':garden_id' => $garden['id']]);
-                    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                    $labels = [];
-                    $temperature = [];
-                    $soil_moisture = [];
-                    $humidity = [];
-
-                    foreach ($results as $row) {
-                        $labels[] = date("H:i", strtotime($row['created_at']));
-                        $temperature[] = $row['temperature'] ?? 0;
-                        $soil_moisture[] = $row['soil_moisture'] ?? 0;
-                        $humidity[] = $row['humidity'] ?? 0;
-                    }
-
-                    $result[$garden['id']] = [
-                        'labels' => $labels,
-                        'temperature' => $temperature,
-                        'soil_moisture' => $soil_moisture,
-                        'humidity' => $humidity
-                    ];
-                }
             }
+
+            error_log("getChartData: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($result));
             return $result;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getChartData: " . $e->getMessage());
-            return [];
+            error_log("getChartData: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy dữ liệu biểu đồ: " . $e->getMessage());
         }
     }
 
-    public function getAlerts($garden_id = null, $userId, $isAdmin) {
+    public function getAlerts($gardenId, $userId, $isAdmin) {
         try {
+            $gardenIds = $gardenId ? [$gardenId] : array_column($this->getAll($userId, $isAdmin), 'id');
+            if (empty($gardenIds)) {
+                error_log("getAlerts: No gardens found for userId=$userId, gardenId=" . ($gardenId ?? 'null'));
+                return [];
+            }
+
+            $sql = "SELECT a.message, 
+                           CASE 
+                               WHEN a.message LIKE '%thiếu nước%' THEN 'danger'
+                               WHEN a.message LIKE '%lỗi%' THEN 'warning'
+                               ELSE 'info'
+                           END AS severity,
+                           a.timestamp,
+                           m.garden_id
+                    FROM messages a
+                    JOIN microcontrollers m ON a.mcu_id = m.mcu_id
+                    WHERE m.garden_id IN (" . implode(',', array_fill(0, count($gardenIds), '?')) . ")
+                    AND a.timestamp >= NOW() - INTERVAL 24 HOUR
+                    ORDER BY a.timestamp DESC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($gardenIds);
+            $alerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             $result = [];
-            if ($garden_id !== null) {
-                $sql = "SELECT message, 
-                               CASE 
-                                   WHEN message LIKE '%thiếu nước%' THEN 'danger'
-                                   WHEN message LIKE '%lỗi%' THEN 'warning'
-                                   ELSE 'info'
-                               END AS severity
-                        FROM alerts
-                        WHERE mcu_id IN (SELECT mcu_id FROM microcontrollers WHERE garden_id = :garden_id)
-                        AND timestamp >= NOW() - INTERVAL 24 HOUR
-                        ORDER BY timestamp DESC
-                        LIMIT 5";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([':garden_id' => $garden_id]);
-                $result[$garden_id] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-            } else {
-                $gardens = $this->getAll($userId, $isAdmin);
-                foreach ($gardens as $garden) {
-                    $sql = "SELECT message, 
-                                   CASE 
-                                       WHEN message LIKE '%thiếu nước%' THEN 'danger'
-                                       WHEN message LIKE '%lỗi%' THEN 'warning'
-                                       ELSE 'info'
-                                   END AS severity
-                            FROM alerts
-                            WHERE mcu_id IN (SELECT mcu_id FROM microcontrollers WHERE garden_id = :garden_id)
-                            AND timestamp >= NOW() - INTERVAL 24 HOUR
-                            ORDER BY timestamp DESC
-                            LIMIT 5";
-                    $stmt = $this->conn->prepare($sql);
-                    $stmt->execute([':garden_id' => $garden['id']]);
-                    $result[$garden['id']] = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-                }
+            foreach ($gardenIds as $gid) {
+                $gardenAlerts = array_filter($alerts, fn($row) => $row['garden_id'] == $gid);
+                $result[$gid] = array_slice(array_values($gardenAlerts), 0, 5);
             }
+
+            error_log("getAlerts: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($alerts));
             return $result;
         } catch (PDOException $e) {
-            error_log("Lỗi trong getAlerts: " . $e->getMessage());
-            return [];
+            error_log("getAlerts: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi lấy cảnh báo: " . $e->getMessage());
         }
     }
 
-    public function toggleIrrigation($garden_id) {
+    public function toggleIrrigation($gardenId) {
         try {
+            $this->conn->beginTransaction();
             $sql = "SELECT status FROM relay_controls 
-                    WHERE garden_id = :garden_id 
+                    WHERE garden_id = ? 
                     ORDER BY updated_at DESC 
                     LIMIT 1";
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([':garden_id' => $garden_id]);
+            $stmt->execute([$gardenId]);
             $current = $stmt->fetch(PDO::FETCH_ASSOC);
             $new_status = $current ? ($current['status'] ? 0 : 1) : 1;
 
             $sql_update = "INSERT INTO relay_controls (garden_id, device_name, status, updated_at)
-                          VALUES (:garden_id, 'irrigation', :status, NOW())";
+                           VALUES (?, 'Irrigation', ?, NOW())";
             $stmt_update = $this->conn->prepare($sql_update);
-            return $stmt_update->execute([
-                ':garden_id' => $garden_id,
-                ':status' => $new_status
-            ]);
+            $result = $stmt_update->execute([$gardenId, $new_status]);
+            error_log("toggleIrrigation: gardenId=$gardenId, new_status=$new_status, success=" . ($result ? 'true' : 'false'));
+            $this->conn->commit();
+            return $result;
         } catch (PDOException $e) {
-            error_log("Lỗi trong toggleIrrigation: " . $e->getMessage());
-            return false;
+            $this->conn->rollBack();
+            error_log("toggleIrrigation: Error: " . $e->getMessage());
+            throw new Exception("Lỗi khi điều khiển tưới: " . $e->getMessage());
         }
     }
 }

@@ -131,15 +131,30 @@
                         <div class="card shadow-sm">
                             <div class="card-body">
                                 <h5 class="card-title text-success">🔧 Điều khiển thiết bị</h5>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <button class="btn btn-success btn-control" onclick="controlRelay('den', 1)">Bật đèn</button>
-                                    <button class="btn btn-danger btn-control" onclick="controlRelay('den', 0)">Tắt đèn</button>
-                                    <button class="btn btn-success btn-control" onclick="controlRelay('quat', 1)">Bật quạt</button>
-                                    <button class="btn btn-danger btn-control" onclick="controlRelay('quat', 0)">Tắt quạt</button>
-                                    <button class="btn btn-success btn-control" onclick="controlRelay('bom', 1)">Bật bơm</button>
-                                    <button class="btn btn-danger btn-control" onclick="controlRelay('bom', 0)">Tắt bơm</button>
-                                </div>
-                                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#scheduleModal">Cài đặt giờ tự động</button>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-lightbulb-fill me-2"></i>Đèn</span>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input device-toggle" type="checkbox" id="denToggle" onchange="toggleDevice('den', this.checked)">
+                                            <label class="form-check-label" for="denToggle"></label>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-fan me-2"></i>Quạt</span>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input device-toggle" type="checkbox" id="quatToggle" onchange="toggleDevice('quat', this.checked)">
+                                            <label class="form-check-label" for="quatToggle"></label>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-droplet-fill me-2"></i>Bơm nước</span>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input device-toggle" type="checkbox" id="bomToggle" onchange="toggleDevice('bom', this.checked)">
+                                            <label class="form-check-label" for="bomToggle"></label>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#scheduleModal">Cài đặt lịch</button>
                             </div>
                         </div>
                     </div>

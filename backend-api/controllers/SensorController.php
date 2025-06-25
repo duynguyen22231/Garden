@@ -181,9 +181,9 @@ class SensorController {
             $success = $this->model->updateRelayControl($garden_id, $device, $status);
             if ($success) {
                 $this->model->updateDeviceStatus($device, $status, $garden_id);
-                echo json_encode(['success' => true, 'message' => 'Cập nhật rơ-le thành công']);
+                echo json_encode(['success' => true, 'message' => 'Cập nhật trạng thái thiết bị thành công']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Cập nhật rơ-le thất bại']);
+                echo json_encode(['success' => false, 'message' => 'Cập nhật trạng thái thiết bị thất bại']);
             }
         } catch (Exception $e) {
             error_log("Lỗi trong updateRelay: " . $e->getMessage());

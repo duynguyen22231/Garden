@@ -15,39 +15,55 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            fetch("../../backend-api/routes/auth.php?action=login", {
+            console.log("Sending login request:", { action: "login", username, password });
+
+            fetch("../../backend-api/routes/auth.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ action: "login", username, password })
             })
-                .then(res => res.json())
+                .then(res => {
+                    console.log("Response status:", res.status);
+                    if (!res.ok) {
+                        return res.text().then(text => {
+                            throw new Error(`HTTP error! status: ${res.status}, response: ${text}`);
+                        });
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    console.log("Login response:", data); // Debug
+                    console.log("Login response:", data);
                     if (data.success && data.data && data.data.token) {
                         localStorage.setItem("accessToken", data.data.token);
-                        console.log("Token saved to localStorage:", data.data.token); // Debug
+                        console.log("Token saved to localStorage:", localStorage.getItem("accessToken"));
                         alert(data.message || "Đăng nhập thành công!");
+                        const savedToken = localStorage.getItem("accessToken");
+                        if (!savedToken) {
+                            console.error("Token not found in localStorage after saving");
+                            alert("Lỗi lưu token, vui lòng thử lại.");
+                            return;
+                        }
                         setTimeout(() => {
                             window.location.href = "/SmartGarden/frontend-web/pages/home.html";
                         }, 1000);
                     } else {
+                        console.error("Login failed:", data.message);
                         alert(data.message || "Đăng nhập thất bại.");
                     }
                 })
                 .catch(err => {
                     console.error("Lỗi khi gửi yêu cầu đăng nhập:", err);
-                    alert("Lỗi kết nối. Vui lòng thử lại sau.");
+                    alert("Lỗi kết nối: " + err.message);
                 });
         });
     }
 
-    // Xử lý đăng ký (giữ nguyên)
+    // Xử lý đăng ký
     if (registerForm) {
         registerForm.addEventListener("submit", function (e) {
             e.preventDefault();
-
             const fullNameInput = registerForm.querySelector("#full_name");
             const usernameInput = registerForm.querySelector("#username");
             const emailInput = registerForm.querySelector("#email");
@@ -68,28 +84,39 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            fetch("../../backend-api/routes/auth.php?action=register", {
+            console.log("Sending register request:", { action: "register", full_name, username, email, password });
+
+            fetch("../../backend-api/routes/auth.php", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ full_name, username, email, password })
+                body: JSON.stringify({ action: "register", full_name, username, email, password })
             })
-                .then(res => res.json().then(data => ({ status: res.status, body: data })))
-                .then(({ status, body }) => {
-                    console.log("Register response:", body);
-                    if (status === 201) {
-                        alert(body.message || "Đăng ký thành công!");
+                .then(res => {
+                    console.log("Response status:", res.status);
+                    if (!res.ok) {
+                        return res.text().then(text => {
+                            throw new Error(`HTTP error! status: ${res.status}, response: ${text}`);
+                        });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    console.log("Register response:", data);
+                    if (data.success) {
+                        alert(data.message || "Đăng ký thành công!");
                         setTimeout(() => {
                             window.location.href = "login.html";
                         }, 1000);
                     } else {
-                        alert(body.message || "Đăng ký thất bại.");
+                        console.error("Register failed:", data.message);
+                        alert(data.message || "Đăng ký thất bại.");
                     }
                 })
                 .catch(err => {
                     console.error("Lỗi khi gửi yêu cầu đăng ký:", err);
-                    alert("Lỗi kết nối. Vui lòng thử lại sau.");
+                    alert("Lỗi kết nối: " + err.message);
                 });
         });
     }

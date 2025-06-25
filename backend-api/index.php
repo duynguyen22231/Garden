@@ -4,5 +4,5 @@ echo json_encode([
     "status" => "ok",
     "message" => "🌱 Smart Garden API is running"
 ]);
-require_once __DIR__ . '/routes/api.php';
+require_once __DIR__ . '/routes/auth.php';
 ?>

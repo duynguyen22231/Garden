@@ -1,42 +1,52 @@
 /* Set active sidebar link dynamically */
 function setActiveNavLink() {
-    const navLinks = document.querySelectorAll('.sidebar .nav-link');
-    const currentPage = window.location.pathname.split('/').pop() || 'sensor.html';
+    try {
+        const navLinks = document.querySelectorAll('.sidebar .nav-link');
+        const currentPage = window.location.pathname.split('/').pop() || 'sensor.html';
+        console.log('Set active nav link for page:', currentPage);
 
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === currentPage) {
-            link.classList.add('active');
-        }
-    });
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === currentPage) {
+                link.classList.add('active');
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi setActiveNavLink:', error);
+    }
 }
 
 // Get token from localStorage
 function getToken() {
-    return localStorage.getItem('accessToken');
+    const token = localStorage.getItem('accessToken');
+    console.log('Token:', token ? 'Có token' : 'Không có token');
+    if (!token) {
+        alert("Vui lòng đăng nhập lại!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+        return null;
+    }
+    return token;
 }
 
 // Get garden_id from URL
 function getGardenIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     const gardenId = urlParams.get('garden_id') || '';
-    console.log('gardenId from URL:', gardenId); // Debug log
+    console.log('gardenId from URL:', gardenId);
     return gardenId;
 }
 
 // Load garden name and update title
 function loadGardenName(gardenId) {
     if (!gardenId) {
+        console.error('Vui lòng chọn một vườn');
         showErrorMessage(new Error('Vui lòng chọn một vườn'));
         window.location.href = 'garden.html';
         return;
     }
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch('http://localhost/SmartGarden/backend-api/routes/garden.php', {
         method: 'POST',
         headers: {
@@ -47,6 +57,11 @@ function loadGardenName(gardenId) {
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -58,10 +73,12 @@ function loadGardenName(gardenId) {
             }
         })
         .then(data => {
-            if (data.success && data.data) {
-                document.getElementById('garden-title').textContent = `🌱 Giám Sát & Điều Khiển - ${data.data.garden_names}`;
+            console.log('Dữ liệu vườn:', data);
+            const titleElement = document.getElementById('garden-title');
+            if (titleElement && data.success && data.data) {
+                titleElement.textContent = `🌱 Giám Sát & Điều Khiển - ${data.data.garden_names || 'Vườn không tên'}`;
             } else {
-                console.warn('Không tìm thấy dữ liệu vườn:', JSON.stringify(data));
+                console.warn('Không tìm thấy garden-title hoặc dữ liệu vườn:', data);
                 showErrorMessage(new Error('Không thể tải tên vườn: ' + (data.message || 'Lỗi không xác định')));
                 window.location.href = 'garden.html';
             }
@@ -69,7 +86,7 @@ function loadGardenName(gardenId) {
         .catch(error => {
             console.error('Lỗi tải tên vườn:', error);
             showErrorMessage(error);
-            window.location.href = 'garden.html';
+            window.location.href = '/SmartGarden/frontend-web/pages/garden.html';
         });
 }
 
@@ -88,30 +105,39 @@ function hasDataChanged(newData, oldData) {
 // Load all data for a specific garden
 function loadGardenData(gardenId) {
     if (!gardenId) {
+        console.error('Vui lòng chọn một vườn');
         showErrorMessage(new Error('Vui lòng chọn một vườn'));
         window.location.href = 'garden.html';
         return;
     }
-    loadSensorData(gardenId);
-    loadDeviceStatus(gardenId);
-    loadSchedules(gardenId);
-    loadAlerts(gardenId);
-    loadMicrocontrollers(gardenId);
+    
+    console.log('Bắt đầu tải dữ liệu cho gardenId:', gardenId);
+    try {
+        loadSensorData(gardenId);
+        loadDeviceStatus(gardenId);
+        loadSchedules(gardenId);
+        loadAlerts(gardenId);
+        loadMicrocontrollers(gardenId);
+    } catch (error) {
+        console.error('Lỗi loadGardenData:', error);
+    }
 }
 
 // Load sensor data from API
 function loadSensorData(gardenId) {
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -124,12 +150,15 @@ function loadSensorData(gardenId) {
         })
         .then(data => {
             console.log('Dữ liệu cảm biến:', data);
-            if (data && data.success && !data.message) {
+            if (data && data.success && data.data) {
                 if (hasDataChanged(data.data, lastSensorData)) {
                     updateSensorUI(data.data);
                     lastSensorData = data.data;
+                } else {
+                    console.log('Dữ liệu cảm biến không thay đổi, không cập nhật UI');
                 }
             } else {
+                console.warn('Không có dữ liệu cảm biến hợp lệ');
                 showNoDataMessage();
             }
         })
@@ -139,45 +168,57 @@ function loadSensorData(gardenId) {
         });
 }
 
-// Update sensor UI with data
+
 function updateSensorUI(sensorData) {
-    const now = new Date(sensorData.created_at || new Date());
-    const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
-                      now.getMinutes().toString().padStart(2, '0');
+    try {
+        console.log('Cập nhật UI cảm biến:', sensorData);
+        const now = new Date(sensorData.created_at || new Date());
+        const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                          now.getMinutes().toString().padStart(2, '0');
 
-    const sensorFields = [
-        { id: 'soil-moisture', value: sensorData.soil_moisture, unit: '%', timeId: 'soil-time' },
-        { id: 'temperature', value: sensorData.temperature, unit: '°C', timeId: 'temp-time' },
-        { id: 'humidity', value: sensorData.humidity, unit: '%', timeId: 'humi-time' },
-        { id: 'light', value: sensorData.light, unit: 'lux', timeId: 'light-time' },
-        { id: 'water-level', value: sensorData.water_level_cm, unit: 'cm', timeId: 'water-time' },
-        { id: 'rain-status', value: sensorData.is_raining == 1 ? 'Đang mưa' : 'Không mưa', unit: '', timeId: 'rain-time', class: sensorData.is_raining == 1 ? 'text-info' : 'text-warning' }
-    ];
+        const sensorFields = [
+            { id: 'soil-moisture', value: sensorData.soil_moisture, unit: '%', timeId: 'soil-time' },
+            { id: 'temperature', value: sensorData.temperature, unit: '°C', timeId: 'temp-time' },
+            { id: 'humidity', value: sensorData.humidity, unit: '%', timeId: 'humi-time' },
+            { id: 'light', value: sensorData.light, unit: 'lux', timeId: 'light-time' },
+            { id: 'water-level', value: sensorData.water_level_cm, unit: 'cm', timeId: 'water-time' },
+            { id: 'rain-status', value: sensorData.is_raining == 1 ? 'Đang mưa' : 'Không mưa', unit: '', timeId: 'rain-time', class: sensorData.is_raining == 1 ? 'text-info' : 'text-warning' }
+        ];
 
-    sensorFields.forEach(field => {
-        const element = document.getElementById(field.id);
-        const timeElement = document.getElementById(field.timeId);
-        if (element && timeElement) {
-            element.textContent = (field.value !== null && field.value !== undefined ? field.value : '--') + field.unit;
-            if (field.class) element.className = 'card-text sensor-value ' + field.class;
-            timeElement.textContent = timeString;
-        }
-    });
+        sensorFields.forEach(field => {
+            const element = document.getElementById(field.id);
+            const timeElement = document.getElementById(field.timeId);
+            console.log(`Kiểm tra phần tử ${field.id}:`, element, `Thời gian ${field.timeId}:`, timeElement);
+            if (element && timeElement) {
+                element.textContent = (field.value !== null && field.value !== undefined ? field.value : '--') + field.unit;
+                if (field.class) {
+                    element.className = 'card-text sensor-value ' + field.class;
+                }
+                timeElement.textContent = timeString;
+            } else {
+                console.error(`Không tìm thấy phần tử: ${field.id} hoặc ${field.timeId}`);
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi updateSensorUI:', error);
+    }
 }
 
 // Load device status from API
 function loadDeviceStatus(gardenId) {
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_status&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -194,8 +235,11 @@ function loadDeviceStatus(gardenId) {
                 if (hasDataChanged(data.data, lastDeviceStatus)) {
                     updateDeviceStatusUI(data.data);
                     lastDeviceStatus = data.data;
+                } else {
+                    console.log('Trạng thái thiết bị không thay đổi, không cập nhật UI');
                 }
             } else {
+                console.warn('Không có dữ liệu trạng thái thiết bị');
                 showNoDeviceStatusMessage();
             }
         })
@@ -207,42 +251,96 @@ function loadDeviceStatus(gardenId) {
 
 // Update device status UI
 function updateDeviceStatusUI(devices) {
-    const statusContainer = document.getElementById('device-status-container');
-    if (!statusContainer) return;
+    try {
+        console.log('Cập nhật UI trạng thái thiết bị:', devices);
+        const statusContainer = document.getElementById('device-status-container');
+        if (!statusContainer) {
+            console.error('Không tìm thấy phần tử #device-status-container');
+            return;
+        }
 
-    statusContainer.innerHTML = `
-        <h5 class="card-title text-success">🔌 Trạng thái thiết bị</h5>
-        <div class="row g-3">
-            ${devices.length === 0 ? '<div class="col-12"><p class="text-muted text-center">Không có thiết bị.</p></div>' : 
-            devices.map(device => `
-                <div class="col-4">
+        const fixedDevices = ['den', 'quat', 'bom'];
+        const deviceMap = {};
+
+        devices.forEach(device => {
+            if (fixedDevices.includes(device.device_name)) {
+                deviceMap[device.device_name] = device;
+                console.log(`Thiết bị được lọc: ${device.device_name}, Trạng thái: ${device.status}`);
+            }
+        });
+
+        let deviceRow = statusContainer.querySelector('.row.g-3');
+        if (!deviceRow) {
+            console.log('Tạo mới row cho trạng thái thiết bị');
+            statusContainer.innerHTML = `
+                <h5 class="card-title text-success">🔌 Trạng thái thiết bị</h5>
+                <div class="row g-3"></div>
+            `;
+            deviceRow = statusContainer.querySelector('.row.g-3');
+        }
+
+        fixedDevices.forEach(deviceName => {
+            const device = deviceMap[deviceName] || { device_name: deviceName, status: 0, last_updated: new Date().toISOString() };
+            let deviceCard = deviceRow.querySelector(`[data-device="${deviceName}"]`);
+
+            if (!deviceCard) {
+                console.log(`Tạo mới card cho ${deviceName}`);
+                deviceCard = document.createElement('div');
+                deviceCard.className = 'col-4';
+                deviceCard.setAttribute('data-device', deviceName);
+                deviceCard.innerHTML = `
                     <div class="card h-100 text-center sensor-card">
                         <div class="card-body">
-                            <i class="bi bi-gear-fill ${device.status ? 'text-success' : 'text-danger'}"></i>
-                            <h6 class="card-title">${device.device_name}</h6>
-                            <p class="card-text sensor-value">${device.status ? 'Bật' : 'Tắt'}</p>
-                            <p class="text-muted small">Cập nhật: ${new Date(device.last_updated).toLocaleTimeString()}</p>
+                            <i class="bi bi-gear-fill"></i>
+                            <h6 class="card-title">${deviceName.charAt(0).toUpperCase() + deviceName.slice(1)}</h6>
+                            <p class="card-text sensor-value"></p>
+                            <p class="text-muted small">Cập nhật: <span class="time"></span></p>
                         </div>
                     </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+                `;
+                deviceRow.appendChild(deviceCard);
+            }
+
+            const icon = deviceCard.querySelector('i');
+            const statusText = deviceCard.querySelector('.sensor-value');
+            const timeSpan = deviceCard.querySelector('.time');
+            console.log(`Cập nhật ${deviceName}: Icon=${!!icon}, StatusText=${!!statusText}, Time=${!!timeSpan}`);
+
+            if (icon && statusText && timeSpan) {
+                icon.className = `bi bi-gear-fill ${device.status ? 'text-success' : 'text-danger'}`;
+                statusText.textContent = device.status ? 'Bật' : 'Tắt';
+                timeSpan.textContent = new Date(device.last_updated).toLocaleTimeString();
+            } else {
+                console.error(`Không tìm thấy phần tử con trong card ${deviceName}`);
+            }
+        });
+
+        deviceRow.querySelectorAll('.col-4').forEach(col => {
+            const deviceName = col.getAttribute('data-device');
+            if (!fixedDevices.includes(deviceName)) {
+                console.log(`Xóa thiết bị không cần thiết: ${deviceName}`);
+                col.remove();
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi updateDeviceStatusUI:', error);
+    }
 }
 
-// Load schedules from API
 function loadSchedules(gardenId) {
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_schedules&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -259,8 +357,11 @@ function loadSchedules(gardenId) {
                 if (hasDataChanged(data.data, lastSchedules)) {
                     updateSchedulesUI(data.data);
                     lastSchedules = data.data;
+                } else {
+                    console.log('Lịch trình không thay đổi, không cập nhật UI');
                 }
             } else {
+                console.warn('Không có dữ liệu lịch trình');
                 showNoSchedulesMessage();
             }
         })
@@ -272,48 +373,71 @@ function loadSchedules(gardenId) {
 
 // Update schedules UI
 function updateSchedulesUI(schedules) {
-    const scheduleContainer = document.getElementById('schedule-container');
-    if (!scheduleContainer) return;
+    try {
+        console.log('Cập nhật UI lịch trình:', schedules);
+        const scheduleContainer = document.getElementById('schedule-container');
+        if (!scheduleContainer) {
+            console.error('Không tìm thấy phần tử #schedule-container');
+            return;
+        }
 
-    scheduleContainer.innerHTML = `
-        <h5 class="card-title text-success">📅 Lịch trình tự động</h5>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Thiết bị</th>
-                    <th>Hành động</th>
-                    <th>Thời gian</th>
-                    <th>Ngày</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${schedules.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có lịch trình.</td></tr>' : 
-                schedules.map(schedule => `
+        const dayMap = {
+            '0': 'Chủ nhật',
+            '1': 'Thứ 2',
+            '2': 'Thứ 3',
+            '3': 'Thứ 4',
+            '4': 'Thứ 5',
+            '5': 'Thứ 6',
+            '6': 'Thứ 7'
+        };
+
+        scheduleContainer.innerHTML = `
+            <h5 class="card-title text-success">📅 Lịch trình tự động</h5>
+            <table class="table table-striped">
+                <thead>
                     <tr>
-                        <td>${schedule.device_name}</td>
-                        <td>${schedule.action == 1 ? 'Bật' : 'Tắt'}</td>
-                        <td>${schedule.time}</td>
-                        <td>${schedule.days}</td>
+                        <th>Thiết bị</th>
+                        <th>Hành động</th>
+                        <th>Thời gian</th>
+                        <th>Ngày</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+                </thead>
+                <tbody>
+                    ${schedules.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có lịch trình.</td></tr>' : 
+                    schedules.map(schedule => {
+                        const days = schedule.days ? schedule.days.split(',').map(day => dayMap[day] || day).join(', ') : '--';
+                        console.log(`Render lịch: ${schedule.device_name}, Ngày: ${days}`);
+                        return `
+                        <tr>
+                            <td>${schedule.device_name ? schedule.device_name.charAt(0).toUpperCase() + schedule.device_name.slice(1) : '--'}</td>
+                            <td>${schedule.action == 1 ? 'Bật' : 'Tắt'}</td>
+                            <td>${schedule.time || '--'}</td>
+                            <td>${days}</td>
+                        </tr>
+                    `}).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        console.error('Lỗi updateSchedulesUI:', error);
+    }
 }
 
 // Load alerts from API
 function loadAlerts(gardenId) {
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_alerts&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -330,8 +454,11 @@ function loadAlerts(gardenId) {
                 if (hasDataChanged(data.data, lastAlerts)) {
                     updateAlertsUI(data.data);
                     lastAlerts = data.data;
+                } else {
+                    console.log('Cảnh báo không thay đổi, không cập nhật UI');
                 }
             } else {
+                console.warn('Không có dữ liệu cảnh báo');
                 showNoAlertsMessage();
             }
         })
@@ -343,33 +470,46 @@ function loadAlerts(gardenId) {
 
 // Update alerts UI
 function updateAlertsUI(alerts) {
-    const alertContainer = document.getElementById('alert-container');
-    if (!alertContainer) return;
+    try {
+        console.log('Cập nhật UI cảnh báo:', alerts);
+        const alertContainer = document.getElementById('alert-container');
+        if (!alertContainer) {
+            console.error('Không tìm thấy phần tử #alert-container');
+            return;
+        }
 
-    alertContainer.innerHTML = `
-        <h5 class="card-title text-success">🚨 Cảnh báo</h5>
-        <ul class="list-group">
-            ${alerts.length === 0 ? '<li class="list-group-item text-center text-muted">Không có cảnh báo.</li>' : 
-            alerts.map(alert => `
-                <li class="list-group-item">${alert.message} - ${new Date(alert.timestamp).toLocaleString()}</li>
-            `).join('')}
-        </ul>
-    `;
+        alertContainer.innerHTML = `
+            <h5 class="card-title text-success">🚨 Cảnh báo</h5>
+            <ul class="list-group">
+                ${alerts.length === 0 ? '<li class="list-group-item text-center text-muted">Không có cảnh báo.</li>' : 
+                alerts.map(alert => {
+                    console.log(`Render cảnh báo: ${alert.sensor_id}`);
+                    return `
+                        <li class="list-group-item">${alert.message || '--'} - Cảm biến: ${alert.sensor_id || '--'} - ${alert.timestamp ? new Date(alert.timestamp).toLocaleString() : '--'}</li>
+                    `;
+                }).join('')}
+            </ul>
+        `;
+    } catch (error) {
+        console.error('Lỗi updateAlertsUI:', error);
+    }
 }
 
 // Load microcontrollers from API
 function loadMicrocontrollers(gardenId) {
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=get_microcontrollers&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
         .then(async res => {
             if (!res.ok) {
+                if (res.status === 401) {
+                    alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                    window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                    return;
+                }
                 const text = await res.text();
                 throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
             }
@@ -386,8 +526,11 @@ function loadMicrocontrollers(gardenId) {
                 if (hasDataChanged(data.data, lastMicrocontrollers)) {
                     updateMicrocontrollersUI(data.data);
                     lastMicrocontrollers = data.data;
+                } else {
+                    console.log('Vi điều khiển không thay đổi, không cập nhật UI');
                 }
             } else {
+                console.warn('Không có dữ liệu vi điều khiển');
                 showNoMicrocontrollersMessage();
             }
         })
@@ -399,98 +542,156 @@ function loadMicrocontrollers(gardenId) {
 
 // Update microcontrollers UI
 function updateMicrocontrollersUI(microcontrollers) {
-    const microContainer = document.getElementById('microcontroller-container');
-    if (!microContainer) return;
+    try {
+        console.log('Cập nhật UI microcontrollers:', microcontrollers);
+        const microContainer = document.getElementById('microcontroller-container');
+        if (!microContainer) {
+            console.error('Không tìm thấy phần tử #microcontroller-container');
+            return;
+        }
 
-    microContainer.innerHTML = `
-        <h5 class="card-title text-success">🖥️ Trạng thái vi điều khiển</h5>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Tên</th>
-                    <th>Trạng thái</th>
-                    <th>IP</th>
-                    <th>Lần cuối hoạt động</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${microcontrollers.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có vi điều khiển.</td></tr>' : 
-                microcontrollers.map(mcu => `
+        microContainer.innerHTML = `
+            <h5 class="card-title text-success">🖥️ Trạng thái vi điều khiển</h5>
+            <table class="table table-striped">
+                <thead>
                     <tr>
-                        <td>${mcu.name}</td>
-                        <td><span class="badge ${mcu.status === 'online' ? 'bg-success' : 'bg-danger'}">${mcu.status}</span></td>
-                        <td>${mcu.ip_address || '--'}</td>
-                        <td>${new Date(mcu.last_seen).toLocaleString()}</td>
+                        <th>Tên</th>
+                        <th>Trạng thái</th>
+                        <th>IP</th>
+                        <th>Lần cuối hoạt động</th>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
+                </thead>
+                <tbody>
+                    ${microcontrollers.length === 0 ? '<tr><td colspan="4" class="text-center text-muted">Không có vi điều khiển.</td></tr>' : 
+                    microcontrollers.map(mcu => {
+                        console.log(`Render vi điều khiển: ${mcu.name}`);
+                        return `
+                        <tr>
+                            <td>${mcu.name || '--'}</td>
+                            <td><span class="badge ${mcu.status === 'online' ? 'bg-success' : 'bg-danger'}">${mcu.status || '--'}</span></td>
+                            <td>${mcu.ip_address || '--'}</td>
+                            <td>${mcu.last_seen ? new Date(mcu.last_seen).toLocaleString() : '--'}</td>
+                        </tr>
+                    `}).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        console.error('Lỗi updateMicrocontrollersUI:', error);
+    }
 }
 
 // Show no data message for sensors
 function showNoDataMessage() {
-    document.querySelectorAll('.sensor-card .card-body').forEach(card => {
-        card.innerHTML = '<p class="text-muted text-center">Không có dữ liệu.</p>';
-    });
+    try {
+        console.log('Hiển thị thông báo không có dữ liệu cảm biến');
+        document.querySelectorAll('.sensor-card .card-body').forEach(card => {
+            card.innerHTML = '<p class="text-muted text-center">Không có dữ liệu.</p>';
+        });
+    } catch (error) {
+        console.error('Lỗi showNoDataMessage:', error);
+    }
 }
 
 // Show no device status message
 function showNoDeviceStatusMessage() {
-    const statusContainer = document.getElementById('device-status-container');
-    if (statusContainer) {
-        statusContainer.innerHTML = '<p class="text-muted text-center">Không có dữ liệu trạng thái thiết bị.</p>';
+    try {
+        console.log('Hiển thị thông báo không có trạng thái thiết bị');
+        const statusContainer = document.getElementById('device-status-container');
+        if (statusContainer) {
+            statusContainer.innerHTML = `
+                <h5 class="card-title text-success">🔌 Trạng thái thiết bị</h5>
+                <p class="text-muted text-center">Không có dữ liệu trạng thái thiết bị.</p>
+            `;
+        } else {
+            console.error('Không tìm thấy #device-status-container');
+        }
+    } catch (error) {
+        console.error('Lỗi showNoDeviceStatusMessage:', error);
     }
 }
 
 // Show no schedules message
 function showNoSchedulesMessage() {
-    const scheduleContainer = document.getElementById('schedule-container');
-    if (scheduleContainer) {
-        scheduleContainer.innerHTML = '<p class="text-muted text-center">Không có lịch trình.</p>';
+    try {
+        console.log('Hiển thị thông báo không có lịch trình');
+        const scheduleContainer = document.getElementById('schedule-container');
+        if (scheduleContainer) {
+            scheduleContainer.innerHTML = `
+                <h5 class="card-title text-success">📅 Lịch trình tự động</h5>
+                <p class="text-muted text-center">Không có lịch trình.</p>
+            `;
+        } else {
+            console.error('Không tìm thấy #schedule-container');
+        }
+    } catch (error) {
+        console.error('Lỗi showNoSchedulesMessage:', error);
     }
 }
 
 // Show no alerts message
 function showNoAlertsMessage() {
-    const alertContainer = document.getElementById('alert-container');
-    if (alertContainer) {
-        alertContainer.innerHTML = '<p class="text-muted text-center">Không có cảnh báo.</p>';
+    try {
+        console.log('Hiển thị thông báo không có cảnh báo');
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <h5 class="card-title text-success">🚨 Cảnh báo</h5>
+                <p class="text-muted text-center">Không có cảnh báo.</p>
+            `;
+        } else {
+            console.error('Không tìm thấy #alert-container');
+        }
+    } catch (error) {
+        console.error('Lỗi showNoAlertsMessage:', error);
     }
 }
 
 // Show no microcontrollers message
 function showNoMicrocontrollersMessage() {
-    const microContainer = document.getElementById('microcontroller-container');
-    if (microContainer) {
-        microContainer.innerHTML = '<p class="text-muted text-center">Không có dữ liệu vi điều khiển.</p>';
+    try {
+        console.log('Hiển thị thông báo không có vi điều khiển');
+        const microContainer = document.getElementById('microcontroller-container');
+        if (microContainer) {
+            microContainer.innerHTML = `
+                <h5 class="card-title text-success">🖥️ Trạng thái vi điều khiển</h5>
+                <p class="text-muted text-center">Không có dữ liệu vi điều khiển.</p>
+            `;
+        } else {
+            console.error('Không tìm thấy #microcontroller-container');
+        }
+    } catch (error) {
+        console.error('Lỗi showNoMicrocontrollersMessage:', error);
     }
 }
 
 // Show error message
 function showErrorMessage(error) {
-    document.querySelectorAll('.sensor-card .card-body').forEach(card => {
-        card.innerHTML = `<p class="text-danger text-center">Lỗi tải dữ liệu: ${error.message}</p>`;
-    });
-    showNoDeviceStatusMessage();
-    showNoSchedulesMessage();
-    showNoAlertsMessage();
-    showNoMicrocontrollersMessage();
+    try {
+        console.error('Hiển thị lỗi:', error);
+        document.querySelectorAll('.sensor-card .card-body').forEach(card => {
+            card.innerHTML = `<p class="text-danger text-center">Lỗi tải dữ liệu: ${error.message}</p>`;
+        });
+        showNoDeviceStatusMessage();
+        showNoSchedulesMessage();
+        showNoAlertsMessage();
+        showNoMicrocontrollersMessage();
+    } catch (err) {
+        console.error('Lỗi showErrorMessage:', err);
+    }
 }
 
-// Control relay devices
-function controlRelay(device, status) {
+// Toggle device status
+function toggleDevice(device, isChecked) {
     const gardenId = getGardenIdFromUrl();
     if (!gardenId) {
         alert('Vui lòng chọn một vườn!');
         return;
     }
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
+    const status = isChecked ? 1 : 0;
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=update_relay', {
         method: 'POST',
         headers: {
@@ -499,25 +700,74 @@ function controlRelay(device, status) {
         },
         body: `garden_id=${gardenId}&name=${device}&status=${status}`
     })
-        .then(async res => {
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+    .then(async res => {
+        if (!res.ok) {
+            if (res.status === 401) {
+                alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                return;
             }
-            return res.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert(`Đã cập nhật ${device} → ${status ? 'Bật' : 'Tắt'}`);
-                loadDeviceStatus(gardenId); // Tải lại ngay khi có thay đổi thủ công
+            const text = await res.text();
+            throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+        }
+        return res.json();
+    })
+    .then(data => {
+        console.log('Kết quả điều khiển:', data);
+        if (data.success) {
+           
+            updateSingleDeviceStatus(device, status);
+            // Cập nhật toggle state trên UI (nếu cần)
+            document.getElementById(`${device}Toggle`).checked = isChecked;
+        } else {
+            alert('Cập nhật thất bại: ' + (data.message || 'Lỗi không xác định'));
+            document.getElementById(`${device}Toggle`).checked = !isChecked; 
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi điều khiển thiết bị:', error);
+        alert('Không thể kết nối đến máy chủ!');
+        document.getElementById(`${device}Toggle`).checked = !isChecked; 
+    });
+}
+
+// Update status of a single device
+function updateSingleDeviceStatus(deviceName, status) {
+    try {
+        console.log(`Cập nhật trạng thái đơn lẻ cho ${deviceName}: ${status}`);
+        const statusContainer = document.getElementById('device-status-container');
+        if (!statusContainer) {
+            console.error('Không tìm thấy #device-status-container');
+            return;
+        }
+
+        let deviceCard = statusContainer.querySelector(`[data-device="${deviceName}"]`);
+        if (deviceCard) {
+            const icon = deviceCard.querySelector('i');
+            const statusText = deviceCard.querySelector('.sensor-value');
+            const timeSpan = deviceCard.querySelector('.time');
+
+            if (icon && statusText && timeSpan) {
+                icon.className = `bi bi-gear-fill ${status ? 'text-success' : 'text-danger'}`;
+                statusText.textContent = status ? 'Bật' : 'Tắt';
+                timeSpan.textContent = new Date().toLocaleTimeString();
+                console.log(`Đã cập nhật UI cho ${deviceName}`);
+
+                lastDeviceStatus = lastDeviceStatus ? lastDeviceStatus.map(device => 
+                    device.device_name === deviceName 
+                        ? { ...device, status, last_updated: new Date().toISOString() }
+                        : device
+                ) : [{ device_name: deviceName, status, last_updated: new Date().toISOString() }];
             } else {
-                alert('Cập nhật thất bại: ' + data.message);
+                console.error(`Không tìm thấy phần tử con trong card ${deviceName}`);
             }
-        })
-        .catch(error => {
-            console.error('Lỗi cập nhật thiết bị:', error);
-            alert('Không thể kết nối đến máy chủ!');
-        });
+        } else {
+            console.warn(`Không tìm thấy card cho ${deviceName}, load lại trạng thái`);
+            loadDeviceStatus(getGardenIdFromUrl());
+        }
+    } catch (error) {
+        console.error('Lỗi updateSingleDeviceStatus:', error);
+    }
 }
 
 // Save schedule settings
@@ -528,29 +778,25 @@ function saveSchedule() {
         return;
     }
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     const device = document.getElementById('deviceSelect').value;
     const action = document.getElementById('actionSelect').value;
     const time = document.getElementById('timeInput').value;
     
     const days = [];
-    if (document.getElementById('monCheck').checked) days.push('Thứ 2');
-    if (document.getElementById('tueCheck').checked) days.push('Thứ 3');
-    if (document.getElementById('wedCheck').checked) days.push('Thứ 4');
-    if (document.getElementById('thuCheck').checked) days.push('Thứ 5');
-    if (document.getElementById('friCheck').checked) days.push('Thứ 6');
-    if (document.getElementById('satCheck').checked) days.push('Thứ 7');
-    if (document.getElementById('sunCheck').checked) days.push('Chủ nhật');
+    ['monCheck', 'tueCheck', 'wedCheck', 'thuCheck', 'friCheck', 'satCheck', 'sunCheck'].forEach((id, index) => {
+        if (document.getElementById(id).checked) {
+            days.push(index === 6 ? 0 : index + 1); // Map to 0-6 (Sun-Sat)
+        }
+    });
     
     if (!time || days.length === 0) {
         alert('Vui lòng chọn thời gian và ít nhất một ngày!');
         return;
     }
 
+    console.log('Lưu lịch:', { device, action, time, days });
     fetch('http://localhost/SmartGarden/backend-api/routes/sensor.php?action=save_schedule', {
         method: 'POST',
         headers: {
@@ -559,73 +805,96 @@ function saveSchedule() {
         },
         body: `garden_id=${gardenId}&device=${device}&action=${action}&time=${time}&days=${days.join(',')}`
     })
-        .then(async res => {
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+    .then(async res => {
+        if (!res.ok) {
+            if (res.status === 401) {
+                alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                return;
             }
-            return res.json();
-        })
-        .then(data => {
-            if (data.success) {
-                alert(`Đã lưu lịch: ${action === '1' ? 'Bật' : 'Tắt'} ${device} lúc ${time} vào các ngày: ${days.join(', ')}`);
-                loadSchedules(gardenId); // Tải lại ngay khi có thay đổi thủ công
-                const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
-                modal.hide();
-            } else {
-                alert('Lưu lịch thất bại: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Lỗi lưu lịch:', error);
-            alert('Không thể kết nối đến máy chủ!');
-        });
+            const text = await res.text();
+            throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+        }
+        return res.json();
+    })
+    .then(data => {
+        console.log('Kết quả lưu lịch:', data);
+        if (data.success) {
+            alert(`Đã lưu lịch: ${action === '1' ? 'Bật' : 'Tắt'} ${device} lúc ${time} vào các ngày: ${days.join(', ')}`);
+            loadSchedules(gardenId);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('scheduleModal'));
+            modal.hide();
+        } else {
+            alert('Lưu lịch thất bại: ' + (data.message || 'Lỗi không xác định'));
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi lưu lịch:', error);
+        alert('Không thể kết nối đến máy chủ!');
+    });
 }
 
 // Check API availability
 function checkAPI(gardenId) {
     if (!gardenId) return;
     const token = getToken();
-    if (!token) {
-        alert("Vui lòng đăng nhập lại!");
-        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
-        return;
-    }
+    if (!token) return;
+
     fetch(`http://localhost/SmartGarden/backend-api/routes/sensor.php?action=latest&garden_id=${gardenId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
-        .then(async res => {
-            if (!res.ok) {
-                const text = await res.text();
-                console.error('API không khả dụng:', text);
-                showErrorMessage(new Error('Không thể kết nối đến máy chủ'));
+    .then(async res => {
+        if (!res.ok) {
+            if (res.status === 401) {
+                alert('Token không hợp lệ. Vui lòng đăng nhập lại!');
+                window.location.href = '/SmartGarden/frontend-web/pages/login.html';
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Lỗi kiểm tra API:', error);
-            showErrorMessage(error);
-        });
+            const text = await res.text();
+            console.error('API không khả dụng:', text);
+            showErrorMessage(new Error('Không thể kết nối đến máy chủ'));
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi kiểm tra API:', error);
+        showErrorMessage(error);
+    });
 }
 
 // Initialize when page loads
 window.onload = function() {
-    setActiveNavLink();
-    const gardenId = getGardenIdFromUrl();
-    if (!gardenId) {
-        showErrorMessage(new Error('Vui lòng chọn một vườn'));
-        window.location.href = 'garden.html';
-        return;
+    try {
+        console.log('Trang sensor.html đã tải');
+        setActiveNavLink();
+        const gardenId = getGardenIdFromUrl();
+        if (!gardenId) {
+            console.error('Không có garden_id, chuyển hướng đến garden.html');
+            showErrorMessage(new Error('Vui lòng chọn một vườn'));
+            window.location.href = '/SmartGarden/frontend-web/pages/garden.html';
+            return;
+        }
+        loadGardenName(gardenId);
+        checkAPI(gardenId);
+        loadGardenData(gardenId);
+        setInterval(() => {
+            console.log('Tự động tải lại dữ liệu');
+            loadGardenData(gardenId);
+        }, 30000); 
+    } catch (error) {
+        console.error('Lỗi window.onload:', error);
     }
-    loadGardenName(gardenId);
-    checkAPI(gardenId);
-    loadGardenData(gardenId);
-    setInterval(() => loadGardenData(gardenId), 30000); 
 };
+
 // Hàm đăng xuất
 function logout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("currentUserId");
-    alert("Đăng xuất thành công!");
-    window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+    try {
+        console.log('Đăng xuất người dùng');
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("currentUserId");
+        alert("Đăng xuất thành công!");
+        window.location.href = "/SmartGarden/frontend-web/pages/login.html";
+    } catch (error) {
+        console.error('Lỗi logout:', error);
+    }
 }

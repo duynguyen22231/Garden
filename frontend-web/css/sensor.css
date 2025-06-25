@@ -1,135 +1,206 @@
 /* General styles */
 body {
-  background-color: #f8f9fa;
+    background-color: #f8f9fa;
+
 }
 
 /* Sidebar styles */
 .sidebar {
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  padding-top: 20px;
-  background-color: #28a745;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    padding-top: 20px;
+    background-color: #28a745;
 }
 
 .sidebar-title {
-  font-size: 1.5rem;
-  color: #fff;
-  margin-bottom: 40px;
-  padding: 15px;
-  border-radius: 10px;
-  text-align: center;
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 40px;
+    padding: 0;
+    border-radius: 0;
+    text-align: center;
+    background: none;
 }
 
 .sidebar .nav-link {
-  font-size: 1.1rem;
-  margin: 5px 0;
-  padding: 10px 15px;
-  color: #fff;
-  border-radius: 5px; /* Bo tròn góc cho tất cả các mục sidebar */
-  transition: all 0.3s ease;
+    font-size: 1.1rem;
+    margin: 5px 0;
+    padding: 10px 15px;
+    color: #fff;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 .sidebar .nav-link:hover {
-  background-color: #218838;
+    background-color: #218838;
+    transform: translateX(5px);
 }
 
 .sidebar .nav-link.active {
-  background-color: #218838;
-  border-radius: 0; /* Loại bỏ bo tròn góc cho mục active */
+    background-color: #218838;
+    border-radius: 0;
 }
 
 /* Header section */
 .d-flex.justify-content-between.align-items-center {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #dee2e6;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
 }
 
 /* Dropdown user */
 .dropdown-toggle {
-  font-size: 1.5rem;
-  color: #28a745;
-  border: none;
-  background: transparent;
-  padding: 0.25rem 0.5rem;
+    font-size: 1.5rem;
+    color: #28a745;
+    border: none;
+    background: transparent;
+    padding: 0.25rem 0.5rem;
 }
 
 .dropdown-toggle:hover {
-  color: #218838;
+    color: #218838;
 }
 
 .dropdown-menu {
-  min-width: 180px;
+    min-width: 180px;
 }
 
 .dropdown-item i {
-  margin-right: 8px;
+    margin-right: 8px;
 }
 
 /* Sensor cards */
 .sensor-card {
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
 }
 
 .sensor-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .sensor-card .card-body i {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
 }
 
 .sensor-value {
-  font-size: 1.25rem;
-  font-weight: 500;
-  margin-bottom: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0;
 }
 
 .sensor-card .text-muted {
-  font-size: 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* Control buttons container */
+.control-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
 }
 
 /* Control buttons */
 .btn-control {
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  border-radius: 0.25rem;
-  transition: transform 0.2s ease;
+    padding: 0.5rem 1.25rem; /* Giảm padding để nút gọn hơn */
+    font-weight: 600;
+    font-size: 0.95rem; /* Giảm kích thước chữ một chút */
+    border-radius: 8px; /* Bo góc mềm mại hơn */
+    transition: all 0.2s ease; /* Hiệu ứng mượt hơn */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15); /* Đổ bóng nhẹ */
+    border: none;
+    min-width: 120px; /* Đảm bảo kích thước tối thiểu để không bị quá nhỏ */
+    text-align: center;
 }
 
 .btn-control:hover {
-  transform: translateY(-2px);
+    transform: translateY(-2px); /* Hiệu ứng nâng lên nhẹ khi hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Tăng độ đổ bóng */
+}
+
+.btn-control:active {
+    transform: translateY(0); /* Trở lại vị trí ban đầu khi nhấn */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Giảm độ đổ bóng */
+}
+
+.btn-success.btn-control {
+    background: linear-gradient(135deg, #34c759, #28a745);
+    color: white;
+}
+
+.btn-success.btn-control:hover {
+    background: linear-gradient(135deg, #2eb44f, #218838);
+}
+
+.btn-danger.btn-control {
+    background: linear-gradient(135deg, #ff4d4f, #dc3545); 
+    color: white;
+}
+
+.btn-danger.btn-control:hover {
+    background: linear-gradient(135deg, #e63946, #c82333); 
+}
+
+/* Primary button for modals */
+.btn-primary.mt-3 {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary.mt-3:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .sidebar {
-      width: 100%;
-      height: auto;
-      position: relative;
-  }
-  
-  main {
-      margin-top: 1rem;
-  }
-  
-  .d-flex.justify-content-between.align-items-center {
-      flex-direction: column;
-      align-items: flex-start;
-  }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    
+    main {
+        margin-top: 1rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-  .dropdown {
-      margin-top: 0.5rem;
-      align-self: flex-end;
-  }
+    .dropdown {
+        margin-top: 0.5rem;
+        align-self: flex-end;
+    }
 
-  .control-buttons {
-      justify-content: center;
-      gap: 0.5rem;
-  }
+    .control-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .btn-control {
+        padding: 0.4rem 1rem; 
+        font-size: 0.9rem; 
+        min-width: 100px; 
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-control {
+        width: 90%; 
+        max-width: 200px; 
+    }
 }

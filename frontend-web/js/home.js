@@ -1,9 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("accessToken");
-    console.log("Token from localStorage:", token); // Debug
-
+    console.log("Retrieved token from localStorage:", token ? token.substring(0, 20) + "..." : "null");
     if (!token) {
-        console.log("No token found, redirecting to login");
+        console.warn("No token found, redirecting to login");
         window.location.href = "/SmartGarden/frontend-web/pages/login.html";
         return;
     }
@@ -12,84 +11,65 @@ document.addEventListener("DOMContentLoaded", async () => {
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Authorization": `Bearer ${token}`
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                "Accept": "application/json"
             },
-            body: new URLSearchParams({ 
-                action: "check_login_status"
-            })
+            body: JSON.stringify({ action: "check_login_status", token: token })
         });
-        const data = await res.json();
-        console.log("Check login status response:", data); // Debug
+        console.log("check_login_status response status:", res.status);
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response:", e.message);
+            data = { success: false, message: "Lỗi server: Phản hồi không phải JSON" };
+        }
+        console.log("check_login_status response data:", data);
 
         if (!data.success) {
-            console.log("Login status check failed, redirecting to login");
+            console.error("check_login_status failed:", data.message);
             localStorage.removeItem('accessToken');
+            localStorage.removeItem('isAdmin');
+            localStorage.removeItem('currentUserId');
+            alert("Phiên đăng nhập không hợp lệ: " + (data.message || "Không rõ nguyên nhân"));
             window.location.href = "/SmartGarden/frontend-web/pages/login.html";
             return;
         }
 
-        // Lưu trạng thái admin
-        const isAdmin = data.data.user.is_admin;
+        const isAdmin = data.data.user.administrator_rights === 1;
         localStorage.setItem('isAdmin', isAdmin);
         localStorage.setItem('currentUserId', data.data.user.id);
+        console.log("Login status verified, isAdmin:", isAdmin, "userId:", data.data.user.id);
 
-        initMap();
+        // Kiểm tra xem Leaflet (L) có được định nghĩa không
+        if (typeof L !== 'undefined') {
+            initMap();
+        } else {
+            console.error("Leaflet library not loaded. Map functionality disabled.");
+            alert("Không thể tải thư viện bản đồ. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
+        }
         loadUsers(isAdmin);
         loadGardens();
         setupImagePreview(isAdmin);
         setupFormHandlers(isAdmin);
         initChart();
     } catch (err) {
-        console.error("Lỗi khi kiểm tra trạng thái đăng nhập:", err);
+        console.error("Error in check_login_status:", err.message);
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('isAdmin');
+        localStorage.removeItem('currentUserId');
+        alert("Lỗi kết nối khi kiểm tra đăng nhập: " + err.message);
         window.location.href = "/SmartGarden/frontend-web/pages/login.html";
     }
 });
 
-// Biến toàn cục để lưu garden_id hiện tại
 let currentGardenId = null;
-
-// Hàm lấy ảnh qua POST và trả về blob URL
-async function getGardenImageBlobUrl(gardenId) {
-    try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Authorization": `Bearer ${token}`
-            },
-            body: new URLSearchParams({
-                action: "get_garden_image",
-                id: gardenId
-            })
-        });
-        if (!res.ok) {
-            console.error(`Lỗi lấy ảnh cho vườn ${gardenId}: HTTP ${res.status}`);
-            return '';
-        }
-        const blob = await res.blob();
-        if (blob.type.startsWith('image/')) {
-            return URL.createObjectURL(blob);
-        } else {
-            const text = await res.text();
-            console.error(`Phản hồi không phải ảnh cho vườn ${gardenId}: ${text}`);
-            return '';
-        }
-    } catch (err) {
-        console.error(`Lỗi khi lấy ảnh cho vườn ${gardenId}:`, err);
-        return '';
-    }
-}
-
-// ================== Bản đồ ==================
 let map, addMode = false, tempMarker = null, realMarker = null;
 
 function initMap() {
     map = L.map("map").setView([10.0125, 105.0809], 12);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
     addAddGardenButton();
     setupMapMouseEvents();
     setupMapClickEvent();
@@ -100,7 +80,7 @@ function addAddGardenButton() {
     addIcon.onAdd = () => {
         const div = L.DomUtil.create("div", "map-button");
         div.innerHTML = "🌱";
-        div.title = "Thêm vườn cây";
+        div.title = "Chọn vị trí vườn cây";
         L.DomEvent.disableClickPropagation(div);
         div.onclick = () => {
             addMode = !addMode;
@@ -109,7 +89,6 @@ function addAddGardenButton() {
                 map.removeLayer(tempMarker);
                 tempMarker = null;
             }
-            console.log("addMode:", addMode); 
         };
         return div;
     };
@@ -117,7 +96,7 @@ function addAddGardenButton() {
 }
 
 function setupMapMouseEvents() {
-    map.on("mousemove", function handler(e) {
+    map.on("mousemove", e => {
         if (!addMode) return;
         if (!tempMarker) {
             tempMarker = L.circleMarker(e.latlng, { color: "green", radius: 3, fillOpacity: 1 }).addTo(map);
@@ -128,7 +107,7 @@ function setupMapMouseEvents() {
 }
 
 function setupMapClickEvent() {
-    map.on("click", function handler(e) {
+    map.on("click", e => {
         if (!addMode) return;
         const lat = e.latlng.lat.toFixed(6);
         const lng = e.latlng.lng.toFixed(6);
@@ -139,24 +118,43 @@ function setupMapClickEvent() {
         map.flyTo([lat, lng], 16, { animate: true });
         if (realMarker) map.removeLayer(realMarker);
         realMarker = L.marker([lat, lng]).addTo(map);
-        document.getElementById("latitude").value = lat;
-        document.getElementById("longitude").value = lng;
-        
+
+        if (typeof Android !== "undefined") {
+            Android.selectLocation(lat, lng);
+        }
+
         const popup = document.getElementById("gardenFormPopup");
-        popup.classList.add("show");
-        document.getElementById("map").classList.add("popup-active");
-        
+        if (popup) {
+            popup.classList.add("show");
+            document.getElementById("map")?.classList.add("popup-active");
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
+            document.getElementById("garden_names").value = "";
+            document.getElementById("location").value = "";
+            document.getElementById("area").value = "";
+            document.getElementById("note").value = "";
+            document.getElementById("image_url").value = "";
+            document.getElementById("imagePreview").style.display = 'none';
+            const ownerSelect = document.getElementById("owner_name");
+            if (ownerSelect) ownerSelect.value = "";
+        } else {
+            console.error("Không tìm thấy phần tử gardenFormPopup");
+        }
+
+        addMode = false;
+        document.querySelector(".map-button").style.backgroundColor = "";
         map.off("mousemove");
         map.off("click");
-        
-        addMode = false;
-        const addButton = document.querySelector(".map-button");
-        if (addButton) addButton.style.backgroundColor = "";
+        setupMapMouseEvents();
+        setupMapClickEvent();
     });
 }
 
-// ================== Dữ liệu cảm biến ==================
 async function loadSensorData(garden_id = currentGardenId) {
+    const sensorDataDiv = document.getElementById("sensorData");
+    if (!sensorDataDiv) return;
+
+    sensorDataDiv.innerHTML = `<p class="text-muted">Đang tải dữ liệu...</p>`;
     try {
         const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_sensor_data" });
@@ -169,49 +167,37 @@ async function loadSensorData(garden_id = currentGardenId) {
             },
             body: body
         });
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const data = await res.json();
-        if (data.success) {
-            const sensorDataDiv = document.getElementById("sensorData");
-            if (sensorDataDiv) {
-                sensorDataDiv.innerHTML = "";
-                if (garden_id && data.data[garden_id]) {
-                    const sensor = data.data[garden_id];
-                    sensorDataDiv.innerHTML = `
-                        <div>
-                            <p><strong>Nhiệt độ:</strong> <span id="temperature">${sensor.temperature} °C</span></p>
-                            <p><strong>Độ ẩm đất:</strong> <span id="soilMoisture">${sensor.soil_moisture} %</span></p>
-                            <p><strong>Độ ẩm không khí:</strong> <span id="humidity">${sensor.humidity} %</span></p>
-                            <p><strong>Trạng thái tưới:</strong> <span id="irrigationStatus">${sensor.irrigation ? "Đang tưới" : "Chưa tưới"}</span></p>
-                            <button id="toggleIrrigation" class="btn btn-outline-${sensor.irrigation ? "danger" : "success"} btn-sm">
-                                ${sensor.irrigation ? "Tắt tưới" : "Bật tưới"}
-                            </button>
-                        </div>
-                    `;
-                    document.getElementById("toggleIrrigation")?.addEventListener("click", toggleIrrigation);
-                } else {
-                    for (const [id, sensor] of Object.entries(data.data)) {
-                        sensorDataDiv.innerHTML += `
-                            <div>
-                                <h5>Vườn ID: ${id}</h5>
-                                <p><strong>Nhiệt độ:</strong> ${sensor.temperature} °C</p>
-                                <p><strong>Độ ẩm đất:</strong> ${sensor.soil_moisture} %</p>
-                                <p><strong>Độ ẩm không khí:</strong> ${sensor.humidity} %</p>
-                                <p><strong>Trạng thái tưới:</strong> ${sensor.irrigation ? "Đang tưới" : "Chưa tưới"}</p>
-                            </div>
-                        `;
-                    }
-                }
-            }
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for sensor data:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+        }
+        sensorDataDiv.innerHTML = "";
+        if (garden_id && data.success && data.data[garden_id]) {
+            const sensor = data.data[garden_id];
+            sensorDataDiv.innerHTML = `
+                <div>
+                    <p><strong>Nhiệt độ:</strong> <span id="temperature">${sensor.temperature || '--'} °C</span></p>
+                    <p><strong>Độ ẩm đất:</strong> <span id="soilMoisture">${sensor.soil_moisture || '--'} %</span></p>
+                    <p><strong>Độ ẩm không khí:</strong> <span id="humidity">${sensor.humidity || '--'} %</span></p>
+                    <p><strong>Trạng thái tưới:</strong> <span id="irrigationStatus">${sensor.irrigation ? "Đang tưới" : "Chưa tưới"}</span></p>
+                    <button id="toggleIrrigation" class="btn btn-outline-${sensor.irrigation ? "danger" : "success"} btn-sm">
+                        ${sensor.irrigation ? "Tắt tưới" : "Bật tưới"}
+                    </button>
+                </div>
+            `;
+            document.getElementById("toggleIrrigation")?.addEventListener("click", toggleIrrigation);
         } else {
-            console.error("Lỗi dữ liệu cảm biến:", data.message);
+            sensorDataDiv.innerHTML = `<p class="text-muted">${data.message || "Không có dữ liệu cảm biến cho vườn này."}</p>`;
         }
     } catch (err) {
         console.error("Lỗi khi tải dữ liệu cảm biến:", err);
+        sensorDataDiv.innerHTML = `<p class="text-danger">Lỗi tải dữ liệu cảm biến: ${err.message}</p>`;
     }
 }
 
-// ================== Biểu đồ ==================
 let envChart;
 
 function initChart() {
@@ -222,37 +208,25 @@ function initChart() {
         data: {
             labels: [],
             datasets: [
-                {
-                    label: "Nhiệt độ (°C)",
-                    data: [],
-                    borderColor: "#ff6384",
-                    fill: false,
-                },
-                {
-                    label: "Độ ẩm đất (%)",
-                    data: [],
-                    borderColor: "#36a2eb",
-                    fill: false,
-                },
-                {
-                    label: "Độ ẩm không khí (%)",
-                    data: [],
-                    borderColor: "#4bc0c0",
-                    fill: false,
-                },
-            ],
+                { label: "Nhiệt độ (°C)", data: [], borderColor: "#ff5722", fill: false },
+                { label: "Độ ẩm đất (%)", data: [], borderColor: "#2196f3", fill: false },
+                { label: "Độ ẩm không khí (%)", data: [], borderColor: "#4caf50", fill: false }
+            ]
         },
         options: {
             responsive: true,
             scales: {
                 x: { title: { display: true, text: "Thời gian" } },
-                y: { title: { display: true, text: "Giá trị" } },
-            },
-        },
+                y: { title: { display: true, text: "Giá trị" } }
+            }
+        }
     });
 }
 
 async function loadChartData(garden_id = currentGardenId) {
+    const chartContainer = document.getElementById("envChart")?.parentElement;
+    if (!envChart || !chartContainer) return;
+
     try {
         const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_chart_data" });
@@ -265,33 +239,44 @@ async function loadChartData(garden_id = currentGardenId) {
             },
             body: body
         });
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const data = await res.json();
-        if (data.success && envChart) {
-            if (garden_id && data.data[garden_id]) {
-                envChart.data.labels = data.data[garden_id].labels;
-                envChart.data.datasets[0].data = data.data[garden_id].temperature;
-                envChart.data.datasets[1].data = data.data[garden_id].soil_moisture;
-                envChart.data.datasets[2].data = data.data[garden_id].humidity;
-                envChart.update();
-            } else {
-                envChart.data.labels = [];
-                envChart.data.datasets[0].data = [];
-                envChart.data.datasets[1].data = [];
-                envChart.data.datasets[2].data = [];
-                envChart.update();
-                console.log("Vui lòng chọn một vườn để xem biểu đồ");
-            }
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for chart data:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+        }
+        if (data.success && garden_id && data.data[garden_id]) {
+            envChart.data.labels = data.data[garden_id].labels || [];
+            envChart.data.datasets[0].data = data.data[garden_id].temperature || [];
+            envChart.data.datasets[1].data = data.data[garden_id].soil_moisture || [];
+            envChart.data.datasets[2].data = data.data[garden_id].humidity || [];
+            envChart.update();
+            chartContainer.querySelector(".no-data")?.remove();
         } else {
-            console.error("Lỗi dữ liệu biểu đồ:", data.message);
+            envChart.data.labels = [];
+            envChart.data.datasets.forEach(dataset => dataset.data = []);
+            envChart.update();
+            if (!chartContainer.querySelector(".no-data")) {
+                chartContainer.insertAdjacentHTML("beforeend", `<p class="no-data text-muted text-center">${data.message || "Không có dữ liệu biểu đồ cho vườn này."}</p>`);
+            }
         }
     } catch (err) {
         console.error("Lỗi khi tải dữ liệu biểu đồ:", err);
+        envChart.data.labels = [];
+        envChart.data.datasets.forEach(dataset => dataset.data = []);
+        envChart.update();
+        if (!chartContainer.querySelector(".no-data")) {
+            chartContainer.insertAdjacentHTML("beforeend", `<p class="no-data text-danger text-center">Lỗi tải dữ liệu biểu đồ: ${err.message}</p>`);
+        }
     }
 }
 
-// ================== Cảnh báo ==================
 async function loadAlerts(garden_id = currentGardenId) {
+    const alertsList = document.getElementById("alertsList");
+    if (!alertsList) return;
+
+    alertsList.innerHTML = `<li class="list-group-item">Đang tải cảnh báo...</li>`;
     try {
         const token = localStorage.getItem("accessToken");
         const body = new URLSearchParams({ action: "get_alerts" });
@@ -304,46 +289,33 @@ async function loadAlerts(garden_id = currentGardenId) {
             },
             body: body
         });
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const data = await res.json();
-        const alertsList = document.getElementById("alertsList");
-        if (alertsList) {
-            alertsList.innerHTML = "";
-            if (data.success) {
-                if (garden_id && data.data[garden_id]) {
-                    data.data[garden_id].forEach(alert => {
-                        const li = document.createElement("li");
-                        li.className = `list-group-item list-group-item-${alert.severity}`;
-                        li.textContent = alert.message;
-                        alertsList.appendChild(li);
-                    });
-                } else {
-                    for (const [id, alerts] of Object.entries(data.data)) {
-                        const li = document.createElement("li");
-                        li.className = "list-group-item";
-                        li.innerHTML = `<strong>Vườn ID: ${id}</strong>`;
-                        alerts.forEach(alert => {
-                            const subLi = document.createElement("li");
-                            subLi.className = `list-group-item list-group-item-${alert.severity}`;
-                            subLi.textContent = alert.message;
-                            li.appendChild(subLi);
-                        });
-                        alertsList.appendChild(li);
-                    };
-                }
-                if (alertsList.innerHTML === "") {
-                    alertsList.innerHTML = `<li class="list-group-item">Không có cảnh báo</li>`;
-                }
-            } else {
-                console.error("Lỗi dữ liệu cảnh báo:", data.message);
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for alerts:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+        }
+        alertsList.innerHTML = "";
+        if (data.success && garden_id && data.data[garden_id]) {
+            data.data[garden_id].forEach(alert => {
+                const li = document.createElement("li");
+                li.className = `list-group-item list-group-item-${alert.severity || 'warning'}`;
+                li.textContent = `${alert.message} (${new Date(alert.timestamp).toLocaleString()})`;
+                alertsList.appendChild(li);
+            });
+            if (!data.data[garden_id].length) {
+                alertsList.innerHTML = `<li class="list-group-item">Không có cảnh báo cho vườn này.</li>`;
             }
+        } else {
+            alertsList.innerHTML = `<li class="list-group-item">${data.message || "Không có cảnh báo."}</li>`;
         }
     } catch (err) {
         console.error("Lỗi khi tải cảnh báo:", err);
+        alertsList.innerHTML = `<li class="list-group-item text-danger">Lỗi tải cảnh báo: ${err.message}</li>`;
     }
 }
 
-// ================== Kiểm soát tưới tiêu ==================
 async function toggleIrrigation() {
     if (!currentGardenId) {
         alert("Vui lòng chọn một vườn để điều khiển tưới!");
@@ -357,31 +329,33 @@ async function toggleIrrigation() {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Authorization": `Bearer ${token}`
             },
-            body: new URLSearchParams({ 
+            body: new URLSearchParams({
                 action: "toggle_irrigation",
                 garden_id: currentGardenId
             })
         });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for irrigation:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+        }
         if (data.success) {
             loadSensorData(currentGardenId);
         } else {
-            alert("Lỗi khi điều khiển tưới: " + data.message);
+            alert("Lỗi khi điều khiển tưới: " + (data.message || "Lỗi không xác định"));
         }
     } catch (err) {
         console.error("Lỗi khi điều khiển tưới:", err);
-        alert("Không thể điều khiển tưới!");
+        alert("Không thể điều khiển tưới: " + err.message);
     }
 }
 
-// ================== Các chức năng hiện có ==================
 async function loadUsers(isAdmin) {
     if (!isAdmin) {
-        // Nếu không phải admin, ẩn phần chọn người dùng
         const ownerSelect = document.getElementById("owner_name");
-        if (ownerSelect) {
-            ownerSelect.parentElement.style.display = 'none';
-        }
+        if (ownerSelect) ownerSelect.parentElement.style.display = 'none';
         return;
     }
 
@@ -395,7 +369,13 @@ async function loadUsers(isAdmin) {
             },
             body: new URLSearchParams({ action: "get_users" })
         });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for users:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+        }
         if (data.success && Array.isArray(data.users)) {
             const select = document.getElementById("owner_name");
             if (select) {
@@ -403,22 +383,31 @@ async function loadUsers(isAdmin) {
                 data.users.forEach(user => {
                     const option = document.createElement("option");
                     option.value = user.id;
-                    option.textContent = user.full_name;
+                    option.textContent = user.full_name || `User ${user.id}`;
                     select.appendChild(option);
                 });
             }
         } else {
-            console.error("Lỗi dữ liệu người dùng:", data.message);
+            console.warn("loadUsers: Không có người dùng hoặc lỗi:", data.message);
+            const select = document.getElementById("owner_name");
+            if (select) {
+                select.innerHTML = '<option value="">Không có người dùng nào</option>';
+                alert("Không thể tải danh sách người dùng: " + (data.message || "Lỗi không xác định"));
+            }
         }
     } catch (err) {
-        console.error("Lỗi khi tải danh sách người dùng:", err);
+        console.error("Lỗi tải danh sách người dùng:", err);
+        const select = document.getElementById("owner_name");
+        if (select) {
+            select.innerHTML = '<option value="">Không tải được</option>';
+            alert("Lỗi kết nối khi tải danh sách người dùng: " + err.message);
+        }
     }
 }
 
 async function loadGardens() {
     try {
         const token = localStorage.getItem("accessToken");
-        console.log("Gửi yêu cầu get_gardens...");
         const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
             method: "POST",
             headers: {
@@ -427,16 +416,12 @@ async function loadGardens() {
             },
             body: new URLSearchParams({ action: "get_gardens" })
         });
-        console.log("Trạng thái HTTP:", res.status, res.statusText);
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-        const text = await res.text();
-        console.log("Phản hồi từ API get_gardens:", text);
-        if (!text) throw new Error("Phản hồi API rỗng");
         let data;
         try {
-            data = JSON.parse(text);
+            data = await res.json();
         } catch (e) {
-            throw new Error("Lỗi phân tích JSON: " + e.message + "\nPhản hồi: " + text);
+            console.error("Failed to parse JSON response for gardens:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
         }
         if (data.success && Array.isArray(data.gardens)) {
             const gardenSelect = document.createElement("select");
@@ -455,11 +440,13 @@ async function loadGardens() {
                 mapContainer.parentNode.insertBefore(gardenSelect, mapContainer);
             }
 
-            gardenSelect.addEventListener("change", async (e) => {
+            gardenSelect.addEventListener("change", async e => {
                 currentGardenId = e.target.value ? parseInt(e.target.value) : null;
-                await loadSensorData(currentGardenId);
-                await loadChartData(currentGardenId);
-                await loadAlerts(currentGardenId);
+                await Promise.all([
+                    loadSensorData(currentGardenId),
+                    loadChartData(currentGardenId),
+                    loadAlerts(currentGardenId)
+                ]);
                 const garden = data.gardens.find(g => g.id == currentGardenId);
                 if (garden) {
                     const lat = parseFloat(garden.latitude);
@@ -474,50 +461,51 @@ async function loadGardens() {
                 const lat = parseFloat(g.latitude);
                 const lng = parseFloat(g.longitude);
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    // Lấy blob URL cho ảnh
-                    const imgSrc = g.img_url && g.img_id ? await getGardenImageBlobUrl(g.img_id) : '';
                     L.marker([lat, lng])
                         .addTo(map)
                         .bindPopup(`
                             <b>${g.garden_names}</b><br>
-                            Chủ vườn: ${g.owner_name || "Không xác định"}<br>
-                            Địa chỉ: ${g.location || "Không có"}<br>
+                            Chủ vườn: ${g.owner_name || 'Không rõ'}<br>
+                            Địa chỉ: ${g.location || ''}<br>
                             Diện tích: ${g.area || 0} m²<br>
-                            Ghi chú: ${g.note || "Không có"}<br>
-                            ${imgSrc ? `<img src="${imgSrc}" style="max-width:100px;" onerror="this.style.display='none'">` : ""}
+                            Ghi chú: ${g.note || ''}<br>
+                            ${g.img_url ? `<img src="${g.img_url}" style="max-width:100px;" onerror="this.style.display='none'" />` : ''}
                         `)
-                        .on("click", () => {
+                        .on('click', async () => {
                             currentGardenId = g.id;
                             gardenSelect.value = g.id;
-                            loadSensorData(currentGardenId);
-                            loadChartData(currentGardenId);
-                            loadAlerts(currentGardenId);
+                            await Promise.all([
+                                loadSensorData(currentGardenId),
+                                loadChartData(currentGardenId),
+                                loadAlerts(currentGardenId)
+                            ]);
                             map.flyTo([lat, lng], 16, { animate: true });
                         });
-                } else {
-                    console.warn(`Vườn ${g.garden_names} (ID: ${g.id}) có tọa độ không hợp lệ: lat=${g.latitude}, lng=${g.longitude}`);
                 }
             }
 
             if (!currentGardenId) {
-                loadSensorData();
-                loadAlerts();
+                await Promise.all([
+                    loadSensorData(),
+                    loadChartData(),
+                    loadAlerts()
+                ]);
             }
 
-            if (data.gardens.length === 0) {
-                console.log("Không có vườn hoạt động nào được tìm thấy");
+            if (!data.gardens.length) {
+                document.getElementById("sensorData").innerHTML = `<p class="text-muted">Không có vườn hoạt động nào.</p>`;
             }
         } else {
-            console.error("Lỗi dữ liệu vườn:", data.message || "Không có dữ liệu vườn");
+            const mapContainer = document.getElementById("map");
+            if (mapContainer) {
+                mapContainer.insertAdjacentHTML("beforebegin", `<div class="alert alert-danger">${data.message || "Không thể tải danh sách vườn."}</div>`);
+            }
         }
     } catch (err) {
         console.error("Lỗi khi tải danh sách vườn:", err);
         const mapContainer = document.getElementById("map");
         if (mapContainer) {
-            const errorDiv = document.createElement("div");
-            errorDiv.className = "alert alert-danger";
-            errorDiv.textContent = "Không thể tải danh sách vườn. Vui lòng thử lại sau.";
-            mapContainer.parentNode.insertBefore(errorDiv, mapContainer);
+            mapContainer.insertAdjacentHTML("beforebegin", `<div class="alert alert-danger">Lỗi kết nối server: ${err.message}</div>`);
         }
     }
 }
@@ -529,12 +517,8 @@ function setupImagePreview(isAdmin) {
         fileInput.addEventListener("change", () => {
             const file = fileInput.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
             } else {
                 preview.src = "";
                 preview.style.display = 'none';
@@ -547,10 +531,7 @@ function setupFormHandlers(isAdmin) {
     const closePopup = document.getElementById("closePopup");
     if (closePopup) {
         closePopup.onclick = () => {
-            const popup = document.getElementById("gardenFormPopup");
-            if (popup) {
-                popup.classList.remove("show");
-            }
+            document.getElementById("gardenFormPopup").classList.remove("show");
             document.getElementById("map")?.classList.remove("popup-active");
             if (realMarker) {
                 map.removeLayer(realMarker);
@@ -561,9 +542,7 @@ function setupFormHandlers(isAdmin) {
                 tempMarker = null;
             }
             addMode = false;
-            const addButton = document.querySelector(".map-button");
-            if (addButton) addButton.style.backgroundColor = "";
-            
+            document.querySelector(".map-button").style.backgroundColor = "";
             setupMapMouseEvents();
             setupMapClickEvent();
         };
@@ -574,16 +553,16 @@ function setupFormHandlers(isAdmin) {
         saveGardenBtn.onclick = async () => {
             const token = localStorage.getItem("accessToken");
             const name = document.getElementById("garden_names")?.value.trim();
-            const owner = isAdmin ? document.getElementById("owner_name")?.value : localStorage.getItem('currentUserId');
+            const ownerId = isAdmin ? document.getElementById("owner_name")?.value : localStorage.getItem('currentUserId');
             const address = document.getElementById("location")?.value.trim();
-            const area = document.getElementById("area")?.value;
+            const area = document.getElementById("area")?.value.trim();
             const note = document.getElementById("note")?.value.trim();
             const lat = document.getElementById("latitude")?.value;
             const lng = document.getElementById("longitude")?.value;
             const fileInput = document.getElementById("image_url");
             const imageFile = fileInput?.files[0];
 
-            if (!name || !owner || !address || !area || !lat || !lng) {
+            if (!name || !ownerId || !address || !area || !lat || !lng) {
                 alert("Vui lòng nhập đầy đủ thông tin bắt buộc!");
                 return;
             }
@@ -591,32 +570,38 @@ function setupFormHandlers(isAdmin) {
             const formData = new FormData();
             formData.append("action", "save_garden");
             formData.append("name", name);
-            formData.append("owner_name", owner);
+            formData.append("user_id", ownerId);
             formData.append("location", address);
             formData.append("area", area);
-            formData.append("note", note);
+            formData.append("note", note || "");
             formData.append("latitude", lat);
             formData.append("longitude", lng);
-            if (imageFile) formData.append("image", imageFile);
+            if (imageFile) {
+                formData.append("image", imageFile);
+            }
 
             try {
                 const res = await fetch("http://localhost/SmartGarden/backend-api/routes/home.php", {
                     method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    },
+                    headers: { "Authorization": `Bearer ${token}` },
                     body: formData
                 });
-                const data = await res.json();
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    console.error("Failed to parse JSON response for save garden:", e);
+                    data = { success: false, message: "Lỗi phản hồi JSON từ server" };
+                }
                 if (data.success) {
-                    alert("✅ Thêm vườn cây thành công!");
+                    alert("✅ Thêm vườn thành công!");
                     window.location.reload();
                 } else {
-                    alert("❌ Thêm vườn cây thất bại!\nLý do: " + data.message);
+                    alert("❌ Thêm vườn thất bại!\nLý do: " + (data.message || "Lỗi không xác định"));
                 }
             } catch (err) {
-                console.error("Lỗi khi lưu vườn cây:", err);
-                alert("❌ Lỗi khi gửi dữ liệu!");
+                console.error("Lỗi khi lưu vườn:", err);
+                alert("❌ Lỗi kết nối server: " + err.message);
             }
         };
     }
@@ -633,11 +618,13 @@ async function logout() {
             },
             body: new URLSearchParams({ action: "logout" })
         });
-        const data = await res.json();
-        if (!data.success) {
-            console.error("Lỗi đăng xuất từ server:", data.message);
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            console.error("Failed to parse JSON response for logout:", e);
+            data = { success: false, message: "Lỗi phản hồi JSON từ server" };
         }
-
         localStorage.removeItem("accessToken");
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("currentUserId");
