@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Giám sát & Điều khiển</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giám Sát & Điều Khiển</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/sensor.css">
@@ -27,15 +27,20 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white active" href="microcontroller.html">
-                                <i class="bi bi-cpu"></i> Quản lý vi điều khiển
+                            <a class="nav-link text-white active" href="sensor.html">
+                                <i class="bi bi-cpu"></i> Giám Sát & Điều Khiển
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="stats.html">
+                                <i class="bi bi-bar-chart-line"></i> Thống Kê
                             </a>
                         </li>
                     </ul>
                 </div>
             </nav>
 
-            <!-- Main Content -->
+            <!-- Main content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <!-- Header -->
                 <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -52,72 +57,80 @@
                     </div>
                 </div>
 
-                <!-- Dữ liệu cảm biến -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title text-success">📊 Dữ liệu cảm biến</h5>
-                                <div class="row g-3" id="sensor-data">
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-droplet-fill text-primary"></i>
-                                                <h6 class="card-title">Độ ẩm đất</h6>
-                                                <p class="card-text sensor-value" id="soil-moisture">--%</p>
-                                                <p class="text-muted small">Cập nhật: <span id="soil-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                <div id="alert-container"></div>
+
+                <!-- Sensor Data -->
+                <div class="card mb-3">
+                    <div class="card-body" id="sensor-data">
+                        <h5 class="card-title text-success">📊 Dữ liệu cảm biến</h5>
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-droplet-fill"></i>
+                                        <h6 class="card-title">Độ ẩm đất</h6>
+                                        <p class="card-text sensor-value" id="soil-moisture">--%</p>
+                                        <p class="text-muted small">Cập nhật: <span id="soil-time">--</span></p>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-thermometer-half text-danger"></i>
-                                                <h6 class="card-title">Nhiệt độ</h6>
-                                                <p class="card-text sensor-value" id="temperature">--°C</p>
-                                                <p class="text-muted small">Cập nhật: <span id="temp-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-thermometer-half"></i>
+                                        <h6 class="card-title">Nhiệt độ</h6>
+                                        <p class="card-text sensor-value" id="temperature">--°C</p>
+                                        <p class="text-muted small">Cập nhật: <span id="temp-time">--</span></p>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-cloud-fill text-info"></i>
-                                                <h6 class="card-title">Độ ẩm không khí</h6>
-                                                <p class="card-text sensor-value" id="humidity">--%</p>
-                                                <p class="text-muted small">Cập nhật: <span id="humi-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-moisture"></i>
+                                        <h6 class="card-title">Độ ẩm không khí</h6>
+                                        <p class="card-text sensor-value" id="humidity">--%</p>
+                                        <p class="text-muted small">Cập nhật: <span id="humi-time">--</span></p>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-brightness-high-fill text-warning"></i>
-                                                <h6 class="card-title">Ánh sáng</h6>
-                                                <p class="card-text sensor-value" id="light">--lux</p>
-                                                <p class="text-muted small">Cập nhật: <span id="light-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-sun-fill"></i>
+                                        <h6 class="card-title">Ánh sáng</h6>
+                                        <p class="card-text sensor-value" id="light">--lux</p>
+                                        <p class="text-muted small">Cập nhật: <span id="light-time">--</span></p>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-water text-primary"></i>
-                                                <h6 class="card-title">Mực nước</h6>
-                                                <p class="card-text sensor-value" id="water-level">--cm</p>
-                                                <p class="text-muted small">Cập nhật: <span id="water-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-water"></i>
+                                        <h6 class="card-title">Mực nước</h6>
+                                        <p class="card-text sensor-value" id="water-level">--cm</p>
+                                        <p class="text-muted small">Cập nhật: <span id="water-time">--</span></p>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="card h-100 text-center sensor-card">
-                                            <div class="card-body">
-                                                <i class="bi bi-cloud-rain-fill text-info"></i>
-                                                <h6 class="card-title">Tình trạng mưa</h6>
-                                                <p class="card-text sensor-value" id="rain-status">--</p>
-                                                <p class="text-muted small">Cập nhật: <span id="rain-time">--:--</span></p>
-                                            </div>
-                                        </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-cloud-rain-fill"></i>
+                                        <h6 class="card-title">Trạng thái mưa</h6>
+                                        <p class="card-text sensor-value" id="rain-status">--</p>
+                                        <p class="text-muted small">Cập nhật: <span id="rain-time">--</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="card h-100 text-center sensor-card">
+                                    <div class="card-body">
+                                        <i class="bi bi-droplet"></i>
+                                        <h6 class="card-title">Độ mặn</h6>
+                                        <p class="card-text sensor-value" id="salinity">--ppm</p>
+                                        <p class="text-muted small">Cập nhật: <span id="salinity-time">--</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -125,93 +138,49 @@
                     </div>
                 </div>
 
-                <!-- Điều khiển thiết bị -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title text-success">🔧 Điều khiển thiết bị</h5>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="bi bi-lightbulb-fill me-2"></i>Đèn</span>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input device-toggle" type="checkbox" id="denToggle" onchange="toggleDevice('den', this.checked)">
-                                            <label class="form-check-label" for="denToggle"></label>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="bi bi-fan me-2"></i>Quạt</span>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input device-toggle" type="checkbox" id="quatToggle" onchange="toggleDevice('quat', this.checked)">
-                                            <label class="form-check-label" for="quatToggle"></label>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="bi bi-droplet-fill me-2"></i>Bơm nước</span>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input device-toggle" type="checkbox" id="bomToggle" onchange="toggleDevice('bom', this.checked)">
-                                            <label class="form-check-label" for="bomToggle"></label>
-                                        </div>
-                                    </li>
-                                </ul>
-                                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#scheduleModal">Cài đặt lịch</button>
-                            </div>
+                <!-- Device Control -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">🔧 Điều khiển thiết bị</h5>
+                        <ul class="list-group list-group-flush" id="device-control-list">
+                            <li class="list-group-item text-center text-muted">Đang tải thiết bị...</li>
+                        </ul>
+                        <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" id="autoModeToggle">
+                            <label class="form-check-label" for="autoModeToggle">Chế độ tự động</label>
                         </div>
+                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#scheduleModal">Cài đặt lịch</button>
                     </div>
                 </div>
 
-                <!-- Trạng thái thiết bị -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body" id="device-status-container">
-                                <h5 class="card-title text-success">🔌 Trạng thái thiết bị</h5>
-                                <p class="text-muted text-center">Đang tải trạng thái...</p>
-                            </div>
-                        </div>
+                <!-- Schedules -->
+                <div class="card mb-3">
+                    <div class="card-body" id="schedule-container">
+                        <h5 class="card-title text-success">📅 Lịch trình tự động</h5>
+                        <p class="text-muted text-center">Đang tải lịch trình...</p>
                     </div>
                 </div>
 
-                <!-- Lịch trình -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body" id="schedule-container">
-                                <h5 class="card-title text-success">📅 Lịch trình tự động</h5>
-                                <p class="text-muted text-center">Đang tải lịch trình...</p>
-                            </div>
-                        </div>
+                <!-- Alerts -->
+                <div class="card mb-3">
+                    <div class="card-body" id="alert-container">
+                        <h5 class="card-title text-success">🚨 Cảnh báo</h5>
+                        <p class="text-muted text-center">Đang tải cảnh báo...</p>
                     </div>
                 </div>
 
-                <!-- Cảnh báo -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body" id="alert-container">
-                                <h5 class="card-title text-success">🚨 Cảnh báo</h5>
-                                <p class="text-muted text-center">Đang tải cảnh báo...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trạng thái vi điều khiển -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body" id="microcontroller-container">
-                                <h5 class="card-title text-success">🖥️ Trạng thái vi điều khiển</h5>
-                                <p class="text-muted text-center">Đang tải trạng thái...</p>
-                            </div>
-                        </div>
+                <!-- Microcontrollers -->
+                <div class="card mb-3">
+                    <div class="card-body" id="microcontroller-container">
+                        <h5 class="card-title text-success">🖥️ Trạng thái vi điều khiển</h5>
+                        <p class="text-muted text-center">Đang tải trạng thái vi điều khiển...</p>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Modal cài đặt giờ tự động -->
+    <!-- Schedule Modal -->
     <div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -224,50 +193,48 @@
                         <div class="mb-3">
                             <label for="deviceSelect" class="form-label">Thiết bị</label>
                             <select class="form-select" id="deviceSelect">
-                                <option value="den">Đèn</option>
-                                <option value="quat">Quạt</option>
-                                <option value="bom">Bơm nước</option>
+                                <option value="">Chọn thiết bị</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="actionSelect" class="form-label">Hành động</label>
                             <select class="form-select" id="actionSelect">
-                                <option value="1">Bật</option>
-                                <option value="0">Tắt</option>
+                                <option value="on">Bật</option>
+                                <option value="off">Tắt</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="timeInput" class="form-label">Thời gian</label>
-                            <input type="time" class="form-control" id="timeInput" required>
+                            <input type="time" class="form-control" id="timeInput">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Lặp lại</label>
+                            <label class="form-label">Ngày</label>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="monCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="monCheck">
                                 <label class="form-check-label" for="monCheck">Thứ 2</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="tueCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="tueCheck">
                                 <label class="form-check-label" for="tueCheck">Thứ 3</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="wedCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="wedCheck">
                                 <label class="form-check-label" for="wedCheck">Thứ 4</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="thuCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="thuCheck">
                                 <label class="form-check-label" for="thuCheck">Thứ 5</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="friCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="friCheck">
                                 <label class="form-check-label" for="friCheck">Thứ 6</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="satCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="satCheck">
                                 <label class="form-check-label" for="satCheck">Thứ 7</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="sunCheck" checked>
+                                <input class="form-check-input" type="checkbox" id="sunCheck">
                                 <label class="form-check-label" for="sunCheck">Chủ nhật</label>
                             </div>
                         </div>

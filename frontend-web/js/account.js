@@ -39,20 +39,21 @@ function loadUserStatus() {
     const accountList = document.getElementById('account-list');
     const addUserBtn = document.getElementById('add-user-btn');
 
-    if (!isAdmin && !currentUserId) {
+    if (!isAdmin) {
         permissionError.classList.remove('d-none');
-        accountList.innerHTML = '';
         addUserBtn.style.display = 'none';
-        return;
+    } else {
+        permissionError.classList.add('d-none');
+        addUserBtn.style.display = 'inline-block';
     }
 
-    permissionError.classList.add('d-none');
-    addUserBtn.style.display = isAdmin ? 'inline-block' : 'none';
-
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status', {
-        headers: { 'Authorization': `Bearer ${token}` },
-        method: 'POST',
-        body: JSON.stringify({ currentUserId: currentUserId || '' })
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/account.php?action=status', {
+        headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Is-Admin': isAdmin.toString(),
+            'Current-User-Id': currentUserId
+        },
+        method: 'POST'
     })
         .then(res => {
             if (!res.ok) {
@@ -67,10 +68,6 @@ function loadUserStatus() {
         .then(data => {
             if (data.success) {
                 let users = data.data;
-                // Nếu không phải admin, chỉ hiển thị tài khoản của người dùng hiện tại
-                if (!isAdmin && currentUserId) {
-                    users = users.filter(user => user.id == currentUserId);
-                }
                 updateUserList(users);
             } else {
                 showErrorMessage(data.message);
@@ -107,7 +104,7 @@ function updateUserList(users) {
                         <div class="action-buttons">
                             ${isCurrentUser || isAdmin ? `
                                 <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(user)})'>Sửa</button>
-                                ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Xóa</button>` : ''}
+                                ${isAdmin && !isCurrentUser ? `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Xóa</button>` : ''}
                             ` : ''}
                         </div>
                     </div>
@@ -128,10 +125,9 @@ function checkAPI() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=status', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/account.php?action=status', {
         headers: { 'Authorization': `Bearer ${token}` },
-        method: 'POST',
-        body: JSON.stringify({ currentUserId: getUserInfo().currentUserId || '' })
+        method: 'POST'
     })
         .then(res => {
             if (!res.ok) {
@@ -177,7 +173,7 @@ function addUser() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=add', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/account.php?action=add', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -227,6 +223,7 @@ function openEditModal(user) {
     document.getElementById('edit-email').value = user.email || '';
     document.getElementById('edit-password').value = '';
     document.getElementById('edit-admin-rights').value = user.administrator_rights ? 1 : 0;
+    document.getElementById('edit-admin-rights').disabled = !isAdmin; // Disable admin rights for non-admins
     document.getElementById('edit-full-name').value = user.full_name || '';
     document.getElementById('edit-error-message').classList.add('d-none');
 
@@ -268,7 +265,7 @@ function updateUser() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=update', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/account.php?action=update', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -317,7 +314,7 @@ function deleteUser(id) {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/account.php?action=delete', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/account.php?action=delete', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -352,7 +349,7 @@ window.onload = function() {
     setInterval(loadUserStatus, 30000);
 };
 
-// Hàm đăng xuất
+// Logout function
 function logout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("isAdmin");

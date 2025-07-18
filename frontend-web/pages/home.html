@@ -27,11 +27,16 @@
                 <i class="bi bi-tree"></i> Quản Lý Vườn Cây
               </a>
             </li>
-              <li class="nav-item">
-                  <a class="nav-link text-white active" href="microcontroller.html">
-                    <i class="bi bi-cpu"></i> Quản lý vi điều khiển
-                  </a>
-                </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="microcontroller.html">
+                <i class="bi bi-cpu"></i> Quản Lý Vi Điều Khiển
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="stats.html">
+                <i class="bi bi-bar-chart-line"></i> Thống Kê
+              </a>
+            </li>
           </ul>
         </div>
       </nav>
@@ -40,7 +45,7 @@
       <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <!-- Header với tiêu đề và dropdown người dùng -->
         <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-          <h1 class="h2 text-success m-0">🌿 Trang chủ</h1>
+          <h1 class="h2 text-success m-0">🌿 Trang Chủ</h1>
           <div class="dropdown">
             <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person-circle"></i>
@@ -59,61 +64,6 @@
             <div class="card shadow-sm">
               <div class="card-body">
                 <div id="map" style="height: 400px;">Đang cài bản đồ...</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Thống kê -->
-        <div class="row mb-4">
-          <div class="col-md-4">
-            <div class="card shadow-sm text-center">
-              <div class="card-body">
-                <h5 class="card-title">🌡️ Nhiệt độ</h5>
-                <p class="display-6" id="temperature">-- °C</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card shadow-sm text-center">
-              <div class="card-body">
-                <h5 class="card-title">💧 Độ ẩm đất</h5>
-                <p class="display-6" id="soilMoisture">-- %</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card shadow-sm text-center">
-              <div class="card-body">
-                <h5 class="card-title">🚰 Tưới cây</h5>
-                <p class="card-text" id="irrigationStatus">Chưa tưới</p>
-                <button class="btn btn-outline-success btn-sm" id="toggleIrrigation">Bật tưới</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Biểu đồ -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">📈 Biểu đồ nhiệt độ & độ ẩm</h5>
-                <canvas id="envChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cảnh báo -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">⚠️ Cảnh báo</h5>
-                <ul id="alertsList" class="list-group">
-                  <li class="list-group-item">Đang tải cảnh báo...</li>
-                </ul>
               </div>
             </div>
           </div>
@@ -169,8 +119,7 @@
   </div>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/SmartGarden/frontend-web/js/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../js/home.js"></script>
 </body>
 </html>

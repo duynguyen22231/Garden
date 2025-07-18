@@ -37,7 +37,7 @@ function loadGardenList() {
 
     const { isAdmin, currentUserId } = getUserInfo();
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/garden.php', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/garden.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ function loadComponentStatus() {
     if (!token) return;
 
     const { isAdmin, currentUserId } = getUserInfo();
-    fetch('http://localhost/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Is-Admin': isAdmin,
@@ -105,7 +105,7 @@ function loadComponentStatus() {
         if (data.success) {
             // Lấy tên vườn từ API garden
             const gardenIds = [...new Set(data.data.map(comp => comp.garden_id))];
-            return fetch('http://localhost/SmartGarden/backend-api/routes/garden.php', {
+            return fetch('http://192.168.1.123/SmartGarden/backend-api/routes/garden.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -184,7 +184,7 @@ function checkAPI() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
         headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
@@ -227,7 +227,7 @@ function addComponent() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/microcontrollers.php?action=add', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ function updateComponent() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/microcontrollers.php?action=update', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=update', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -351,7 +351,7 @@ function deleteComponent(mcu_id, garden_id) {
 
     const { isAdmin, currentUserId } = getUserInfo();
 
-    fetch('http://localhost/SmartGarden/backend-api/routes/microcontrollers.php?action=delete', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=delete', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

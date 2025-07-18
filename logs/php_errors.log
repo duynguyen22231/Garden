@@ -1,1 +1,218 @@
 [25-Jun-2025 08:07:25 Europe/Berlin] Lỗi trong auth.php: File database.php không tồn tại
+[08-Jul-2025 10:22:05 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 10:22:05 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 10:22:05 Europe/Berlin] PHP Warning:  Undefined array key "administrator_rights" in C:\xampp\htdocs\SmartGarden\backend-api\routes\stats.php on line 33
+[08-Jul-2025 10:22:05 Europe/Berlin] User ID: 1, isAdmin: false
+[08-Jul-2025 10:22:05 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 10:22:05 Europe/Berlin] Fetched 2 accessible gardens for user 1
+[08-Jul-2025 10:22:05 Europe/Berlin] Accessible gardens fetched: 2 gardens for user 1
+[08-Jul-2025 10:35:29 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 10:35:29 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 10:35:29 Europe/Berlin] PHP Warning:  Undefined array key "administrator_rights" in C:\xampp\htdocs\SmartGarden\backend-api\routes\stats.php on line 33
+[08-Jul-2025 10:35:29 Europe/Berlin] User ID: 1, isAdmin: false
+[08-Jul-2025 10:35:29 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 10:35:29 Europe/Berlin] Fetched 2 accessible gardens for user 1
+[08-Jul-2025 10:35:29 Europe/Berlin] Accessible gardens fetched: 2 gardens for user 1
+[08-Jul-2025 10:47:47 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 10:47:47 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 10:47:47 Europe/Berlin] PHP Warning:  Undefined array key "administrator_rights" in C:\xampp\htdocs\SmartGarden\backend-api\routes\stats.php on line 33
+[08-Jul-2025 10:47:47 Europe/Berlin] User ID: 1, isAdmin: false
+[08-Jul-2025 10:47:47 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 10:47:48 Europe/Berlin] Fetched 2 accessible gardens for user 1
+[08-Jul-2025 10:47:48 Europe/Berlin] Accessible gardens fetched: 2 gardens for user 1
+[08-Jul-2025 11:01:31 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:01:31 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:01:31 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:01:31 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:01:31 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 11:01:31 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:01:31 Europe/Berlin] Accessible gardens fetched: 6 gardens for user 1
+[08-Jul-2025 11:05:31 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:05:31 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:05:31 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:05:31 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:05:31 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 11:05:31 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:05:31 Europe/Berlin] Accessible gardens fetched: 6 gardens for user 1
+[08-Jul-2025 11:05:54 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:05:54 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:05:54 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:05:54 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:05:54 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched sensor stats for garden ID 9
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched plant stats for garden ID 9
+[08-Jul-2025 11:05:54 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[08-Jul-2025 11:05:54 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 11:05:54 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[08-Jul-2025 11:06:32 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:06:32 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:06:32 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:06:32 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:06:32 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 11:06:32 Europe/Berlin] Fetching stats for garden IDs: 20, timeRange: 7d
+[08-Jul-2025 11:06:32 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:06:32 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:06:33 Europe/Berlin] Fetched garden info for garden ID 20: Found
+[08-Jul-2025 11:06:33 Europe/Berlin] Fetched sensor stats for garden ID 20
+[08-Jul-2025 11:06:33 Europe/Berlin] Fetched plant stats for garden ID 20
+[08-Jul-2025 11:06:33 Europe/Berlin] Error in getAlerts for garden ID 20: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 11:06:33 Europe/Berlin] Fetched monthly stats for garden ID 20: 0 records
+[08-Jul-2025 11:06:33 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 20: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 11:06:33 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[08-Jul-2025 11:06:53 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:06:53 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:06:53 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:06:53 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:06:53 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched sensor stats for garden ID 9
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched plant stats for garden ID 9
+[08-Jul-2025 11:06:53 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[08-Jul-2025 11:06:53 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 11:06:53 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[08-Jul-2025 11:08:07 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:08:07 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:08:07 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:08:07 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:08:07 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 11:08:07 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[08-Jul-2025 11:08:07 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched sensor stats for garden ID 9
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched plant stats for garden ID 9
+[08-Jul-2025 11:08:08 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[08-Jul-2025 11:08:08 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 11:08:08 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[08-Jul-2025 11:17:35 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 11:17:35 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 11:17:35 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 11:17:35 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 11:17:35 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 24h
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched sensor stats for garden ID 9
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched plant stats for garden ID 9
+[08-Jul-2025 11:17:35 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[08-Jul-2025 11:17:35 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 11:17:35 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[08-Jul-2025 17:09:25 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 17:09:25 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 17:09:25 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 17:09:25 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 17:09:25 Europe/Berlin] Action received: get_accessible_gardens
+[08-Jul-2025 17:09:25 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 17:09:25 Europe/Berlin] Accessible gardens fetched: 6 gardens for user 1
+[08-Jul-2025 17:09:40 Europe/Berlin] Initializing AuthModel
+[08-Jul-2025 17:09:40 Europe/Berlin] findByToken: token=a283cdc38c4a246c0b26... , found={"user_id":1,"expiry":"2025-07-09 08:03:45"}
+[08-Jul-2025 17:09:40 Europe/Berlin] findById: userId=1, found=true
+[08-Jul-2025 17:09:40 Europe/Berlin] User ID: 1, isAdmin: true
+[08-Jul-2025 17:09:40 Europe/Berlin] Action received: get_stats
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetching stats for garden IDs: 10,9, timeRange: 7d
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched garden info for garden ID 10: Found
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched sensor stats for garden ID 10
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched plant stats for garden ID 10
+[08-Jul-2025 17:09:40 Europe/Berlin] Error in getAlerts for garden ID 10: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched monthly stats for garden ID 10: 0 records
+[08-Jul-2025 17:09:40 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 10: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched sensor stats for garden ID 9
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched plant stats for garden ID 9
+[08-Jul-2025 17:09:40 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'alert_type' in 'field list'
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[08-Jul-2025 17:09:40 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[08-Jul-2025 17:09:40 Europe/Berlin] Fetched stats for 2 gardens for user 1
+[09-Jul-2025 18:14:27 Europe/Berlin] Initializing AuthModel
+[09-Jul-2025 18:14:27 Europe/Berlin] findByToken: token=ffa1d1567716ab0de3e8... , found={"user_id":1,"expiry":"2025-07-10 18:00:29"}
+[09-Jul-2025 18:14:27 Europe/Berlin] findById: userId=1, found=true
+[09-Jul-2025 18:14:27 Europe/Berlin] User ID: 1, isAdmin: true
+[09-Jul-2025 18:14:27 Europe/Berlin] Action received: get_accessible_gardens
+[09-Jul-2025 18:14:27 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[09-Jul-2025 18:14:27 Europe/Berlin] Accessible gardens fetched: 6 gardens for user 1
+[12-Jul-2025 18:36:31 Europe/Berlin] Initializing AuthModel
+[12-Jul-2025 18:36:31 Europe/Berlin] findByToken: token=eb1b9778d65c3d5bfc17... , found={"user_id":1,"expiry":"2025-07-13 18:35:28"}
+[12-Jul-2025 18:36:31 Europe/Berlin] findById: userId=1, found=true
+[12-Jul-2025 18:36:31 Europe/Berlin] User ID: 1, isAdmin: true
+[12-Jul-2025 18:36:31 Europe/Berlin] Action received: get_accessible_gardens
+[12-Jul-2025 18:36:31 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[12-Jul-2025 18:36:31 Europe/Berlin] Accessible gardens fetched: 6 gardens for user 1
+[12-Jul-2025 18:36:34 Europe/Berlin] Initializing AuthModel
+[12-Jul-2025 18:36:34 Europe/Berlin] findByToken: token=eb1b9778d65c3d5bfc17... , found={"user_id":1,"expiry":"2025-07-13 18:35:28"}
+[12-Jul-2025 18:36:34 Europe/Berlin] findById: userId=1, found=true
+[12-Jul-2025 18:36:34 Europe/Berlin] User ID: 1, isAdmin: true
+[12-Jul-2025 18:36:34 Europe/Berlin] Action received: get_stats
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched sensor stats for garden ID 9
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched plant stats for garden ID 9
+[12-Jul-2025 18:36:34 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'timestamp' in 'field list'
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[12-Jul-2025 18:36:34 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[12-Jul-2025 18:36:34 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[12-Jul-2025 18:36:55 Europe/Berlin] Initializing AuthModel
+[12-Jul-2025 18:36:55 Europe/Berlin] findByToken: token=eb1b9778d65c3d5bfc17... , found={"user_id":1,"expiry":"2025-07-13 18:35:28"}
+[12-Jul-2025 18:36:55 Europe/Berlin] findById: userId=1, found=true
+[12-Jul-2025 18:36:55 Europe/Berlin] User ID: 1, isAdmin: true
+[12-Jul-2025 18:36:55 Europe/Berlin] Action received: get_stats
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetching stats for garden IDs: 9,14, timeRange: 7d
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched 6 accessible gardens for user 1
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched sensor stats for garden ID 9
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched plant stats for garden ID 9
+[12-Jul-2025 18:36:55 Europe/Berlin] Error in getAlerts for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'timestamp' in 'field list'
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[12-Jul-2025 18:36:55 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched garden info for garden ID 14: Found
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched sensor stats for garden ID 14
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched plant stats for garden ID 14
+[12-Jul-2025 18:36:55 Europe/Berlin] Error in getAlerts for garden ID 14: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'timestamp' in 'field list'
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched monthly stats for garden ID 14: 0 records
+[12-Jul-2025 18:36:55 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 14: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[12-Jul-2025 18:36:55 Europe/Berlin] Fetched stats for 2 gardens for user 1
+[18-Jul-2025 04:47:00 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 04:47:00 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 04:47:00 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 04:47:00 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 04:47:00 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 04:47:00 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 04:47:00 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 04:47:18 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 04:47:18 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 04:47:18 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 04:47:18 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 04:47:18 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetching stats for garden IDs: 10, timeRange: 7d
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched garden info for garden ID 10: Found
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched sensor stats for garden ID 10
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched plant stats for garden ID 10
+[18-Jul-2025 04:47:18 Europe/Berlin] Error in getAlerts for garden ID 10: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'timestamp' in 'field list'
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched monthly stats for garden ID 10: 0 records
+[18-Jul-2025 04:47:18 Europe/Berlin] Error in getPlantMonthlyStats for garden ID 10: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'planting_date' in 'field list'
+[18-Jul-2025 04:47:18 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[18-Jul-2025 05:25:26 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:25:26 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:25:26 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:25:26 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:25:26 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:25:26 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:25:26 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1

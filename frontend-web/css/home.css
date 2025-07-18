@@ -14,7 +14,7 @@ body {
 .sidebar-title {
   font-size: 1.5rem;
   color: #fff;
-  margin-bottom: 40px; /* Tăng khoảng cách giữa tiêu đề và các mục bên dưới */
+  margin-bottom: 40px;
 }
 
 .sidebar .nav-link {
@@ -29,14 +29,12 @@ body {
   border-radius: 5px;
 }
 
-/* Header section */
 .d-flex.justify-content-between.align-items-center {
   padding-top: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid #dee2e6;
 }
 
-/* Dropdown user */
 .dropdown-toggle {
   font-size: 1.5rem;
   color: #28a745;
@@ -93,38 +91,6 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.list-group-item-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.list-group-item-warning {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .sidebar {
-      width: 100%;
-      height: auto;
-      position: relative;
-  }
-  
-  main {
-      margin-top: 1rem;
-  }
-  
-  .d-flex.justify-content-between.align-items-center {
-      flex-direction: column;
-      align-items: flex-start;
-  }
-  
-  .dropdown {
-      margin-top: 0.5rem;
-      align-self: flex-end;
-  }
-}
 .map-button {
   background-color: #28a745;
   color: white;
@@ -151,4 +117,26 @@ body {
 
 .map-button:focus {
   outline: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  main {
+    margin-top: 1rem;
+  }
+  
+  .d-flex.justify-content-between.align-items-center {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dropdown {
+    margin-top: 0.5rem;
+    align-self: flex-end;
+  }
 }

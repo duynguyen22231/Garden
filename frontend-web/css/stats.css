@@ -1,0 +1,138 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.sidebar {
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  padding-top: 20px;
+  background-color: #28a745;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  color: #fff;
+  margin-bottom: 40px;
+}
+
+.sidebar .nav-link {
+  font-size: 1.1rem;
+  margin: 5px 0;
+  padding: 10px 15px;
+  color: #fff;
+}
+
+.sidebar .nav-link:hover {
+  background-color: #218838;
+  border-radius: 5px;
+}
+
+.sidebar .nav-link.active {
+  background-color: #218838;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.d-flex.justify-content-between.align-items-center {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.dropdown-toggle {
+  font-size: 1.5rem;
+  color: #28a745;
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0.5rem;
+}
+
+.dropdown-toggle:hover {
+  color: #218838;
+}
+
+.dropdown-menu {
+  min-width: 180px;
+}
+
+.dropdown-item i {
+  margin-right: 8px;
+}
+
+.card {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-title {
+  color: #28a745;
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #333;
+}
+
+#generateChartBtn {
+  height: 38px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  main {
+    margin-top: 1rem;
+  }
+  
+  .d-flex.justify-content-between.align-items-center {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dropdown {
+    margin-top: 0.5rem;
+    align-self: flex-end;
+  }
+
+  .login-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    text-align: center;
+    z-index: 1000;
+  }
+
+  .login-message h2 {
+    color: #28a745;
+    margin-bottom: 1rem;
+  }
+
+  .login-message .btn {
+    margin-top: 1rem;
+  }
+
+  .auth-required {
+    display: block;
+  }
+}

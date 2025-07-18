@@ -63,7 +63,7 @@ function apiRequest(formData, callback) {
         return;
     }
 
-    fetch("http://localhost/SmartGarden/backend-api/routes/garden.php", {
+    fetch("http://192.168.1.123/SmartGarden/backend-api/routes/garden.php", {
         method: "POST",
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -190,7 +190,7 @@ function searchGardens(query, isAdmin, currentUserId) {
 async function getGardenImageBlobUrl(gardenId) {
     try {
         const token = localStorage.getItem("accessToken");
-        const res = await fetch("http://localhost/SmartGarden/backend-api/routes/garden.php", {
+        const res = await fetch("http://192.168.1.123/SmartGarden/backend-api/routes/garden.php", {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",

@@ -26,7 +26,7 @@ class AccountModel {
                 'administrator_rights' => (bool)$row['administrator_rights'],
                 'full_name' => $row['full_name'],
                 'created_at' => $row['created_at'],
-                'img_user' => base64_encode($row['img_user']) // Chuyển BLOB thành base64 để gửi về frontend
+                'img_user' => $row['img_user'] ? base64_encode($row['img_user']) : null
             ];
         }
         return $users;
@@ -41,12 +41,23 @@ class AccountModel {
         $stmt->bindParam(':password', $hashed_password);
         $stmt->bindParam(':administrator_rights', $administrator_rights, PDO::PARAM_INT);
         $stmt->bindParam(':full_name', $full_name);
-        $stmt->bindParam(':img_user', $img_user, PDO::PARAM_LOB);
+
+        // Handle base64 image
+        $img_data = null;
+        if ($img_user) {
+            // Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
+            $img_user = preg_replace('/^data:image\/[a-z]+;base64,/', '', $img_user);
+            $img_data = base64_decode($img_user);
+            if ($img_data === false) {
+                throw new Exception("Dữ liệu ảnh không hợp lệ");
+            }
+        }
+        $stmt->bindParam(':img_user', $img_data, PDO::PARAM_LOB);
         return $stmt->execute();
     }
 
     public function updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $img_user = null) {
-        // Lấy thông tin người dùng hiện tại để giữ nguyên các trường không được gửi
+        // Get current user data to preserve unchanged fields
         $query = "SELECT username, email, administrator_rights, full_name FROM users WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -57,13 +68,13 @@ class AccountModel {
             throw new Exception("Không tìm thấy người dùng với ID: $id");
         }
 
-        // Sử dụng giá trị hiện tại nếu không có dữ liệu mới
+        // Use existing values if not provided
         $username = !empty($username) ? $username : $user['username'];
         $email = !empty($email) ? $email : $user['email'];
         $administrator_rights = isset($administrator_rights) ? (int)$administrator_rights : $user['administrator_rights'];
         $full_name = !empty($full_name) ? $full_name : $user['full_name'];
 
-        // Xây dựng query động dựa trên các trường được gửi
+        // Build dynamic query
         $query = "UPDATE users SET username = :username, email = :email, administrator_rights = :administrator_rights, full_name = :full_name";
         $params = [
             ':username' => $username,
@@ -80,7 +91,16 @@ class AccountModel {
         }
         if ($img_user !== null) {
             $query .= ", img_user = :img_user";
-            $params[':img_user'] = $img_user;
+            // Handle base64 image
+            $img_data = null;
+            if ($img_user) {
+                $img_user = preg_replace('/^data:image\/[a-z]+;base64,/', '', $img_user);
+                $img_data = base64_decode($img_user);
+                if ($img_data === false) {
+                    throw new Exception("Dữ liệu ảnh không hợp lệ");
+                }
+            }
+            $params[':img_user'] = $img_data;
         }
         $query .= " WHERE id = :id";
 

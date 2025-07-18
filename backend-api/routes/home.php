@@ -4,7 +4,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Bật ghi log lỗi
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', 'C:/xampp/php/logs/php_errors.log');
@@ -18,10 +17,9 @@ try {
     require_once '../controllers/HomeController.php';
     require_once '../models/AuthModel.php';
 
-    // Lấy dữ liệu đầu vào
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) {
-        $input = $_POST; // Fallback cho form-encoded
+        $input = $_POST;
     }
     $action = $input['action'] ?? $_GET['action'] ?? '';
     error_log("home.php: Nhận yêu cầu với action: '$action', input: " . json_encode($input, JSON_UNESCAPED_UNICODE));
@@ -59,7 +57,6 @@ try {
             exit;
         }
 
-        // Lấy thông tin người dùng
         $userId = $tokenData['user_id'];
         $user = $authModel->findById($userId);
         if (!$user) {
@@ -102,33 +99,8 @@ try {
             $response = $controller->getAllGardens($userId, $isAdmin);
             break;
 
-        case 'get_garden_image':
-            if (!$garden_id) {
-                http_response_code(400);
-                $response = ['success' => false, 'message' => 'Yêu cầu id vườn'];
-            } else {
-                $response = $controller->getGardenImage($garden_id, $userId, $isAdmin);
-            }
-            break;
-
         case 'save_garden':
             $response = $controller->saveGarden($input, $userId, $isAdmin);
-            break;
-
-        case 'get_sensor_data':
-            $response = $controller->getSensorData($garden_id, $userId, $isAdmin);
-            break;
-
-        case 'get_chart_data':
-            $response = $controller->getChartData($garden_id, $userId, $isAdmin);
-            break;
-
-        case 'get_alerts':
-            $response = $controller->getAlerts($garden_id, $userId, $isAdmin);
-            break;
-
-        case 'toggle_irrigation':
-            $response = $controller->toggleIrrigation($garden_id, $userId, $isAdmin);
             break;
 
         default:

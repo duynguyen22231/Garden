@@ -1,20 +1,44 @@
 <?php
+// Tắt hiển thị lỗi ra phản hồi
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL);
+
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../controllers/GardenController.php';
 require_once __DIR__ . '/../models/AuthModel.php';
-require_once __DIR__ . '/../config/database.php';
 
-header('Content-Type: application/json');
+// Đảm bảo thư mục log tồn tại
+$logDir = __DIR__ . '/../logs/';
+$logFile = $logDir . 'garden_errors.log';
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0777, true);
+}
+if (!file_exists($logFile)) {
+    touch($logFile);
+    chmod($logFile, 0666);
+}
+
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type, Is-Admin, Current-User-Id');
 
-// Xử lý yêu cầu OPTIONS cho CORS
+// Handle CORS preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
-    exit();
+    exit;
 }
 
-// Kiểm tra token
+// Check database connection
+if (!isset($conn) || !$conn instanceof PDO) {
+    error_log('Lỗi: Kết nối cơ sở dữ liệu không được khởi tạo trong garden.php', 3, $logFile);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Lỗi kết nối cơ sở dữ liệu']);
+    exit;
+}
+
+// Check token
 $headers = getallheaders();
 $authHeader = $headers['Authorization'] ?? '';
 $token = '';
@@ -22,152 +46,180 @@ if ($authHeader && preg_match('/Bearer (.+)/', $authHeader, $matches)) {
     $token = $matches[1];
 }
 
-$authModel = new AuthModel();
-if (!$token) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Chưa đăng nhập hoặc token không được cung cấp']);
-    exit;
-}
+try {
+    $authModel = new AuthModel();
+    if (!$token) {
+        error_log('Lỗi: Thiếu token trong yêu cầu', 3, $logFile);
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Chưa đăng nhập hoặc token không được cung cấp']);
+        exit;
+    }
 
-$tokenData = $authModel->findByToken($token);
-if (!$tokenData) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Token không hợp lệ']);
-    exit;
-}
+    $tokenData = $authModel->findByToken($token);
+    if (!$tokenData) {
+        error_log('Lỗi: Token không hợp lệ: ' . substr($token, 0, 20) . '...', 3, $logFile);
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Token không hợp lệ']);
+        exit;
+    }
 
-// Lấy thông tin người dùng để kiểm tra quyền
-$userId = $tokenData['user_id'];
-$user = $authModel->findById($userId);
-if (!$user) {
-    http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'Không tìm thấy người dùng']);
-    exit;
-}
-$isAdmin = $user['administrator_rights'] == 1;
+    // Get user info for authorization
+    $userId = $tokenData['user_id'];
+    $user = $authModel->findById($userId);
+    if (!$user) {
+        error_log('Lỗi: Không tìm thấy người dùng với user_id: ' . $userId, 3, $logFile);
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Không tìm thấy người dùng']);
+        exit;
+    }
+    $isAdmin = $user['administrator_rights'] == 1;
+    $isAdmin = isset($headers['Is-Admin']) ? ($headers['Is-Admin'] === 'true') : $isAdmin;
+    $userId = $headers['Current-User-Id'] ?? $userId;
 
-// Sử dụng header nếu có
-$isAdmin = isset($headers['Is-Admin']) ? ($headers['Is-Admin'] === 'true') : $isAdmin;
-$userId = $headers['Current-User-Id'] ?? $userId;
+    // Get action from POST or JSON
+    $action = '';
+    if ($_SERVER['CONTENT_TYPE'] === 'application/json') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $action = $input['action'] ?? '';
+    } else {
+        $action = $_POST['action'] ?? '';
+    }
+    error_log("Xử lý hành động: $action, user_id: $userId, isAdmin: " . ($isAdmin ? 'true' : 'false'), 3, $logFile);
 
-// Lấy action từ body JSON nếu có, ưu tiên khi Content-Type là application/json
-$action = '';
-$input = json_decode(file_get_contents('php://input'), true);
-if ($input && isset($input['action']) && $_SERVER['CONTENT_TYPE'] === 'application/json') {
-    $action = $input['action'];
-} elseif (isset($_POST['action'])) {
-    $action = $_POST['action'];
-}
+    $controller = new GardenController($conn);
 
-$controller = new GardenController($conn);
+    switch ($action) {
+        case 'get_all_gardens':
+        case 'get_gardens':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $controller->getGardens(null, $userId, $isAdmin);
+            break;
 
-switch ($action) {
-    case 'get_all_gardens':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
-            exit;
-        }
-        $controller->getGardens(null, $userId, $isAdmin);
-        break;
+        case 'get_gardens_by_ids':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $ids = explode(',', $_POST['ids'] ?? '');
+            $controller->getGardensByIds($ids);
+            break;
 
-    case 'get_gardens_by_ids':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
-            exit;
-        }
-        $ids = explode(',', $_POST['ids'] ?? '');
-        $controller->getGardensByIds($ids);
-        break;
+        case 'search_gardens':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $searchQuery = $_POST['search'] ?? '';
+            if ($searchQuery) {
+                $controller->getGardens($searchQuery, $userId, $isAdmin);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Từ khóa tìm kiếm không hợp lệ']);
+            }
+            break;
 
-    case 'search_gardens':
-        $searchQuery = $_POST['search'] ?? '';
-        if ($searchQuery) {
-            $controller->getGardens($searchQuery, $userId, $isAdmin);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Từ khóa tìm kiếm không hợp lệ']);
-        }
-        break;
+        case 'get_garden_image':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $id = $_POST['id'] ?? null;
+            if ($id) {
+                $controller->getGardenImage($id, $userId, $isAdmin);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
+            }
+            break;
 
-    case 'get_gardens':
-        $controller->getGardens(null, $userId, $isAdmin);
-        break;
+        case 'get_garden_by_id':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $id = $_POST['id'] ?? null;
+            if ($id) {
+                $controller->getGardenById($id, $userId, $isAdmin);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
+            }
+            break;
 
-    case 'get_garden_image':
-        $id = $_POST['id'] ?? null;
-        if ($id) {
-            $controller->getGardenImage($id, $userId, $isAdmin);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
-        }
-        break;
-
-    case 'get_garden_by_id':
-        $id = $_POST['id'] ?? null;
-        if ($id) {
-            $controller->getGardenById($id, $userId, $isAdmin);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
-        }
-        break;
-
-    case 'save_garden':
-        try {
+        case 'save_garden':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
             $controller->saveGarden($_POST, $_FILES, $userId, $isAdmin);
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
-        }
-        break;
+            break;
 
-    case 'update_garden':
-        $id = $_POST['id'] ?? null;
-        if ($id) {
-            try {
+        case 'update_garden':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $id = $_POST['id'] ?? null;
+            if ($id) {
                 $controller->updateGarden($id, $_POST, $_FILES, $userId, $isAdmin);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Lỗi cập nhật: ' . $e->getMessage()]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
             }
-        } else {
-            echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
-        }
-        break;
+            break;
 
-    case 'delete_garden':
-        $id = $_POST['id'] ?? null;
-        if ($id) {
-            try {
+        case 'delete_garden':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
+            $id = $_POST['id'] ?? null;
+            if ($id) {
                 $controller->deleteGarden($id, $userId, $isAdmin);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Lỗi xóa: ' . $e->getMessage()]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
             }
-        } else {
-            echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
-        }
-        break;
+            break;
 
-    case 'get_status_options':
-        try {
+        case 'get_status_options':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
+            }
             $controller->getStatusOptions();
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
-        }
-        break;
+            break;
 
-    case 'get_users':
-        if (!$isAdmin) {
-            echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập danh sách người dùng']);
-        } else {
-            try {
-                $controller->getUsers();
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
+        case 'get_users':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Phương thức không được phép']);
+                exit;
             }
-        }
-        break;
+            if (!$isAdmin) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập danh sách người dùng']);
+                exit;
+            }
+            $controller->getUsers();
+            break;
 
-    default:
-        echo json_encode(['success' => false, 'message' => 'Hành động không hợp lệ']);
-        break;
+        default:
+            error_log("Hành động không hợp lệ: $action", 3, $logFile);
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Hành động không hợp lệ: ' . $action]);
+            break;
+    }
+} catch (Exception $e) {
+    error_log("Lỗi chung trong routes/garden.php: " . $e->getMessage(), 3, $logFile);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Lỗi máy chủ: ' . $e->getMessage()]);
 }
 ?>

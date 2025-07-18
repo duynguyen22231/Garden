@@ -119,36 +119,10 @@ class HomeController {
         }
     }
 
-    public function getGardenImage($gardenId, $userId, $isAdmin) {
-        try {
-            if (!$isAdmin) {
-                $garden = $this->model->getGardenById($gardenId);
-                if (!$garden || $garden['user_id'] != $userId) {
-                    error_log("getGardenImage: Access denied for userId=$userId, gardenId=$gardenId");
-                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập ảnh của vườn này'];
-                }
-            }
-
-            $image = $this->model->getGardenImage($gardenId);
-            error_log("getGardenImage: Success for gardenId=$gardenId");
-            return ['success' => true, 'image' => base64_encode($image)];
-        } catch (Exception $e) {
-            error_log("getGardenImage: Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()];
-        }
-    }
-
     public function saveGarden($data, $userId, $isAdmin) {
         try {
             $imageBlob = null;
-            if (!empty($data['img'])) {
-                $imageBlob = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $data['img']));
-                if ($imageBlob === false) {
-                    error_log("saveGarden: Failed to decode base64 image");
-                    return ['success' => false, 'message' => 'Không thể giải mã hình ảnh'];
-                }
-            } elseif (!empty($data['image'])) {
-                // Hỗ trợ upload file từ web
+            if (!empty($data['image'])) {
                 $imageBlob = file_get_contents($data['image']['tmp_name']);
                 if ($imageBlob === false) {
                     error_log("saveGarden: Failed to read uploaded image");
@@ -195,97 +169,6 @@ class HomeController {
         } catch (Exception $e) {
             error_log("logout: Error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Lỗi khi đăng xuất: ' . $e->getMessage()];
-        }
-    }
-
-    public function getSensorData($gardenId, $userId, $isAdmin) {
-        try {
-            if ($gardenId && !$isAdmin) {
-                $garden = $this->model->getGardenById($gardenId);
-                if (!$garden || $garden['user_id'] != $userId) {
-                    error_log("getSensorData: Access denied for userId=$userId, gardenId=$gardenId");
-                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
-                }
-            }
-            $data = $this->model->getSensorData($gardenId, $userId, $isAdmin);
-            error_log("getSensorData: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($data));
-            return [
-                'success' => !empty($data),
-                'data' => $data,
-                'message' => empty($data) && !$gardenId ? 'Không có vườn hoạt động nào được tìm thấy' : 'Lấy dữ liệu cảm biến thành công'
-            ];
-        } catch (Exception $e) {
-            error_log("getSensorData: Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi khi lấy dữ liệu cảm biến: ' . $e->getMessage()];
-        }
-    }
-
-    public function getChartData($gardenId, $userId, $isAdmin) {
-        try {
-            if ($gardenId && !$isAdmin) {
-                $garden = $this->model->getGardenById($gardenId);
-                if (!$garden || $garden['user_id'] != $userId) {
-                    error_log("getChartData: Access denied for userId=$userId, gardenId=$gardenId");
-                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
-                }
-            }
-            $data = $this->model->getChartData($gardenId, $userId, $isAdmin);
-            error_log("getChartData: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($data));
-            return [
-                'success' => !empty($data),
-                'data' => $data,
-                'message' => empty($data) && !$gardenId ? 'Không có vườn hoạt động nào được tìm thấy' : 'Lấy dữ liệu biểu đồ thành công'
-            ];
-        } catch (Exception $e) {
-            error_log("getChartData: Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi khi lấy dữ liệu biểu đồ: ' . $e->getMessage()];
-        }
-    }
-
-    public function getAlerts($gardenId, $userId, $isAdmin) {
-        try {
-            if ($gardenId && !$isAdmin) {
-                $garden = $this->model->getGardenById($gardenId);
-                if (!$garden || $garden['user_id'] != $userId) {
-                    error_log("getAlerts: Access denied for userId=$userId, gardenId=$gardenId");
-                    return ['success' => false, 'message' => 'Bạn không có quyền truy cập vườn này'];
-                }
-            }
-            $alerts = $this->model->getAlerts($gardenId, $userId, $isAdmin);
-            error_log("getAlerts: gardenId=" . ($gardenId ?? 'null') . ", userId=$userId, found=" . count($alerts));
-            return [
-                'success' => !empty($alerts),
-                'data' => $alerts,
-                'message' => empty($alerts) && !$gardenId ? 'Không có vườn hoạt động nào được tìm thấy' : 'Lấy cảnh báo thành công'
-            ];
-        } catch (Exception $e) {
-            error_log("getAlerts: Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi khi lấy cảnh báo: ' . $e->getMessage()];
-        }
-    }
-
-    public function toggleIrrigation($gardenId, $userId, $isAdmin) {
-        try {
-            if (!$gardenId) {
-                error_log("toggleIrrigation: No garden_id provided");
-                return ['success' => false, 'message' => 'Yêu cầu garden_id để điều khiển tưới'];
-            }
-            if (!$isAdmin) {
-                $garden = $this->model->getGardenById($gardenId);
-                if (!$garden || $garden['user_id'] != $userId) {
-                    error_log("toggleIrrigation: Access denied for userId=$userId, gardenId=$gardenId");
-                    return ['success' => false, 'message' => 'Bạn không có quyền điều khiển tưới vườn này'];
-                }
-            }
-            $success = $this->model->toggleIrrigation($gardenId);
-            error_log("toggleIrrigation: gardenId=$gardenId, userId=$userId, success=" . ($success ? 'true' : 'false'));
-            return [
-                'success' => $success,
-                'message' => $success ? 'Điều khiển tưới thành công' : 'Lỗi khi điều khiển tưới'
-            ];
-        } catch (Exception $e) {
-            error_log("toggleIrrigation: Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Lỗi khi điều khiển tưới: ' . $e->getMessage()];
         }
     }
 }
