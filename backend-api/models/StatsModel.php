@@ -63,35 +63,30 @@ class StatsModel {
                 // Lấy thống kê cảm biến
                 $sensorStats = $this->getSensorStats($gardenId, $startDate, $endDate);
                 
-                // Lấy thống kê cây trồng
-                $plantStats = $this->getPlantStats($gardenId);
-                
-                // Lấy cảnh báo
-                $alerts = $this->getAlerts($gardenId, $startDate, $endDate);
-                
                 // Lấy thống kê theo thời gian
                 $monthlyStats = $this->getMonthlyStats($gardenId, $startDate, $endDate);
-                $plantMonthlyStats = $this->getPlantMonthlyStats($gardenId, $startDate, $endDate);
                 
                 $stats[] = [
                     'id' => $gardenId,
                     'name' => $gardenInfo['garden_names'] ?? 'Không tên',
                     'owner_name' => $gardenInfo['owner_name'] ?? 'Không xác định',
-                    'avg_temperature' => $sensorStats['avg_temperature'] ?? 0,
-                    'max_temperature' => $sensorStats['max_temperature'] ?? 0,
-                    'min_temperature' => $sensorStats['min_temperature'] ?? 0,
-                    'avg_humidity' => $sensorStats['avg_humidity'] ?? 0,
-                    'max_humidity' => $sensorStats['max_humidity'] ?? 0,
-                    'min_humidity' => $sensorStats['min_humidity'] ?? 0,
-                    'avg_soil_moisture' => $sensorStats['avg_soil_moisture'] ?? 0,
-                    'max_soil_moisture' => $sensorStats['max_soil_moisture'] ?? 0,
-                    'min_soil_moisture' => $sensorStats['min_soil_moisture'] ?? 0,
-                    'plant_count' => $plantStats['plant_count'] ?? 0,
-                    'avg_health' => $plantStats['avg_health'] ?? 0,
-                    'species_count' => $plantStats['species_count'] ?? 0,
-                    'monthly_stats' => $monthlyStats,
-                    'plant_monthly_stats' => $plantMonthlyStats,
-                    'alerts' => $alerts
+                    'avg_temperature' => isset($sensorStats['avg_temperature']) ? floatval($sensorStats['avg_temperature']) : 0,
+                    'max_temperature' => isset($sensorStats['max_temperature']) ? floatval($sensorStats['max_temperature']) : 0,
+                    'min_temperature' => isset($sensorStats['min_temperature']) ? floatval($sensorStats['min_temperature']) : 0,
+                    'avg_humidity' => isset($sensorStats['avg_humidity']) ? floatval($sensorStats['avg_humidity']) : 0,
+                    'max_humidity' => isset($sensorStats['max_humidity']) ? floatval($sensorStats['max_humidity']) : 0,
+                    'min_humidity' => isset($sensorStats['min_humidity']) ? floatval($sensorStats['min_humidity']) : 0,
+                    'avg_soil_moisture' => isset($sensorStats['avg_soil_moisture']) ? floatval($sensorStats['avg_soil_moisture']) : 0,
+                    'max_soil_moisture' => isset($sensorStats['max_soil_moisture']) ? floatval($sensorStats['max_soil_moisture']) : 0,
+                    'min_soil_moisture' => isset($sensorStats['min_soil_moisture']) ? floatval($sensorStats['min_soil_moisture']) : 0,
+                    'avg_light' => isset($sensorStats['avg_light']) ? floatval($sensorStats['avg_light']) : 0,
+                    'max_light' => isset($sensorStats['max_light']) ? floatval($sensorStats['max_light']) : 0,
+                    'min_light' => isset($sensorStats['min_light']) ? floatval($sensorStats['min_light']) : 0,
+                    'avg_water_level' => isset($sensorStats['avg_water_level']) ? floatval($sensorStats['avg_water_level']) : 0,
+                    'max_water_level' => isset($sensorStats['max_water_level']) ? floatval($sensorStats['max_water_level']) : 0,
+                    'min_water_level' => isset($sensorStats['min_water_level']) ? floatval($sensorStats['min_water_level']) : 0,
+                    'rain_percentage' => isset($sensorStats['rain_percentage']) ? floatval($sensorStats['rain_percentage']) : 0,
+                    'monthly_stats' => $monthlyStats
                 ];
             }
             
@@ -123,37 +118,30 @@ class StatsModel {
                         MIN(humidity) as min_humidity,
                         AVG(soil_moisture) as avg_soil_moisture,
                         MAX(soil_moisture) as max_soil_moisture,
-                        MIN(soil_moisture) as min_soil_moisture
+                        MIN(soil_moisture) as min_soil_moisture,
+                        AVG(light) as avg_light,
+                        MAX(light) as max_light,
+                        MIN(light) as min_light,
+                        AVG(water_level_cm) as avg_water_level,
+                        MAX(water_level_cm) as max_water_level,
+                        MIN(water_level_cm) as min_water_level,
+                        (SUM(is_raining) / COUNT(*)) * 100 as rain_percentage
                     FROM sensor_readings
                     $whereClause";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
             $result = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            
+            // Ép kiểu các giá trị thành float
+            $result = array_map(function($value) {
+                return $value !== null ? floatval($value) : 0;
+            }, $result);
+            
             error_log("Fetched sensor stats for garden ID $gardenId");
             return $result;
         } catch (PDOException $e) {
             error_log("Error in getSensorStats for garden ID $gardenId: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    private function getPlantStats($gardenId) {
-        try {
-            $sql = "SELECT 
-                        COUNT(*) as plant_count,
-                        AVG(health_status) as avg_health,
-                        COUNT(DISTINCT species) as species_count
-                    FROM plants
-                    WHERE garden_id = ?";
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([$gardenId]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-            error_log("Fetched plant stats for garden ID $gardenId");
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Error in getPlantStats for garden ID $gardenId: " . $e->getMessage());
             return [];
         }
     }
@@ -173,7 +161,10 @@ class StatsModel {
                         DATE_FORMAT(created_at, '%Y-%m') as month,
                         AVG(temperature) as avg_temperature,
                         AVG(humidity) as avg_humidity,
-                        AVG(soil_moisture) as avg_soil_moisture
+                        AVG(soil_moisture) as avg_soil_moisture,
+                        AVG(light) as avg_light,
+                        AVG(water_level_cm) as avg_water_level,
+                        (SUM(is_raining) / COUNT(*)) * 100 as rain_percentage
                     FROM sensor_readings
                     $whereClause
                     GROUP BY month
@@ -182,42 +173,24 @@ class StatsModel {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
             $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Ép kiểu các giá trị số thành float
+            $result = array_map(function($row) {
+                return [
+                    'month' => $row['month'],
+                    'avg_temperature' => isset($row['avg_temperature']) ? floatval($row['avg_temperature']) : 0,
+                    'avg_humidity' => isset($row['avg_humidity']) ? floatval($row['avg_humidity']) : 0,
+                    'avg_soil_moisture' => isset($row['avg_soil_moisture']) ? floatval($row['avg_soil_moisture']) : 0,
+                    'avg_light' => isset($row['avg_light']) ? floatval($row['avg_light']) : 0,
+                    'avg_water_level' => isset($row['avg_water_level']) ? floatval($row['avg_water_level']) : 0,
+                    'rain_percentage' => isset($row['rain_percentage']) ? floatval($row['rain_percentage']) : 0
+                ];
+            }, $result);
+            
             error_log("Fetched monthly stats for garden ID $gardenId: " . count($result) . " records");
             return $result;
         } catch (PDOException $e) {
             error_log("Error in getMonthlyStats for garden ID $gardenId: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    private function getPlantMonthlyStats($gardenId, $startDate, $endDate) {
-        try {
-            $whereClause = "WHERE garden_id = :garden_id";
-            $params = [':garden_id' => $gardenId];
-            
-            if ($startDate && $endDate) {
-                $whereClause .= " AND planting_date BETWEEN :start_date AND :end_date";
-                $params[':start_date'] = $startDate;
-                $params[':end_date'] = $endDate;
-            }
-            
-            $sql = "SELECT 
-                        DATE_FORMAT(planting_date, '%Y-%m') as month,
-                        AVG(health_status) as avg_health,
-                        COUNT(*) as plant_added,
-                        SUM(CASE WHEN health_status < 50 THEN 1 ELSE 0 END) as unhealthy_count
-                    FROM plants
-                    $whereClause
-                    GROUP BY month
-                    ORDER BY month";
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute($params);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            error_log("Fetched plant monthly stats for garden ID $gardenId: " . count($result) . " records");
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Error in getPlantMonthlyStats for garden ID $gardenId: " . $e->getMessage());
             return [];
         }
     }
@@ -237,34 +210,6 @@ class StatsModel {
         } catch (PDOException $e) {
             error_log("Error in getGardenInfo for garden ID $gardenId: " . $e->getMessage());
             return null;
-        }
-    }
-
-    private function getAlerts($gardenId, $startDate, $endDate) {
-        try {
-            $whereClause = "WHERE garden_id = :garden_id";
-            $params = [':garden_id' => $gardenId];
-            
-            if ($startDate && $endDate) {
-                $whereClause .= " AND timestamp BETWEEN :start_date AND :end_date";
-                $params[':start_date'] = $startDate;
-                $params[':end_date'] = $endDate;
-            }
-            
-            $sql = "SELECT message, timestamp, alert_type
-                    FROM alerts
-                    $whereClause
-                    ORDER BY timestamp DESC
-                    LIMIT 10";
-            
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute($params);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            error_log("Fetched alerts for garden ID $gardenId: " . count($result) . " alerts");
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Error in getAlerts for garden ID $gardenId: " . $e->getMessage());
-            return [];
         }
     }
 }

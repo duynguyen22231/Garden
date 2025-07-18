@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    let temperatureChart, humidityChart, soilMoistureChart, timeChart, healthChart;
+    let temperatureChart, humidityChart, soilMoistureChart, lightChart, waterLevelChart, rainChart, timeChart;
     let isAdmin = false;
     let userId = null;
 
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <a href="login.html" class="btn btn-primary">Đăng nhập</a>
         `;
         
-        const container = document.querySelector('.container') || document.body;
+        const container = document.querySelector('.container-fluid') || document.body;
         container.prepend(loginMessage);
     }
 
@@ -95,8 +95,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const temperatureCtx = document.getElementById('temperatureChart')?.getContext('2d');
         const humidityCtx = document.getElementById('humidityChart')?.getContext('2d');
         const soilMoistureCtx = document.getElementById('soilMoistureChart')?.getContext('2d');
+        const lightCtx = document.getElementById('lightChart')?.getContext('2d');
+        const waterLevelCtx = document.getElementById('waterLevelChart')?.getContext('2d');
+        const rainCtx = document.getElementById('rainChart')?.getContext('2d');
         const timeCtx = document.getElementById('timeChart')?.getContext('2d');
-        const healthCtx = document.getElementById('healthChart')?.getContext('2d');
         
         if (temperatureCtx) {
             temperatureChart = new Chart(temperatureCtx, {
@@ -122,17 +124,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        if (timeCtx) {
-            timeChart = new Chart(timeCtx, {
+        if (lightCtx) {
+            lightChart = new Chart(lightCtx, {
                 type: 'bar',
                 data: { labels: [], datasets: [] },
                 options: { responsive: true }
             });
         }
         
-        if (healthCtx) {
-            healthChart = new Chart(healthCtx, {
-                type: 'line',
+        if (waterLevelCtx) {
+            waterLevelChart = new Chart(waterLevelCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true }
+            });
+        }
+        
+        if (rainCtx) {
+            rainChart = new Chart(rainCtx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true }
+            });
+        }
+        
+        if (timeCtx) {
+            timeChart = new Chart(timeCtx, {
+                type: 'bar',
                 data: { labels: [], datasets: [] },
                 options: { responsive: true }
             });
@@ -184,8 +202,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeRange = document.getElementById('timeRange')?.value || '7d';
         const chartType = document.getElementById('chartType')?.value || 'bar';
         const sensorType = document.getElementById('sensorType')?.value || 'all';
-        const startDate = document.getElementById('startDate')?.value;
-        const endDate = document.getElementById('endDate')?.value;
         
         if (!gardenId1) {
             showError('Vui lòng chọn ít nhất một vườn');
@@ -209,11 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 garden_ids: garden_ids,
                 time_range: timeRange
             };
-            
-            if (startDate && endDate) {
-                requestBody.start_date = startDate;
-                requestBody.end_date = endDate;
-            }
 
             console.log('Gửi yêu cầu thống kê:', requestBody);
 
@@ -238,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("Dữ liệu thống kê:", data.data);
                 updateCharts(data.data, chartType, timeRange, sensorType);
                 updateStatsTable(data.data);
-                updateAlerts(data.data);
             } else {
                 throw new Error(data.message || 'Không thể tải thống kê');
             }
@@ -288,8 +298,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (temperatureChart) temperatureChart.destroy();
         if (humidityChart) humidityChart.destroy();
         if (soilMoistureChart) soilMoistureChart.destroy();
+        if (lightChart) lightChart.destroy();
+        if (waterLevelChart) waterLevelChart.destroy();
+        if (rainChart) rainChart.destroy();
         if (timeChart) timeChart.destroy();
-        if (healthChart) healthChart.destroy();
         
         if (!gardenData || !Array.isArray(gardenData) || gardenData.length === 0) {
             console.warn('Không có dữ liệu vườn để vẽ biểu đồ');
@@ -301,21 +313,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const temperatureDatasets = [
             {
                 label: 'Nhiệt độ trung bình (°C)',
-                data: gardenData.map(garden => garden.avg_temperature || 0),
-                backgroundColor: gardenData.map(garden => (garden.avg_temperature || 0) > 35 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(255, 99, 132, 0.5)'),
+                data: gardenData.map(garden => parseFloat(garden.avg_temperature) || 0),
+                backgroundColor: gardenData.map(garden => (parseFloat(garden.avg_temperature) || 0) > 35 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(255, 99, 132, 0.5)'),
                 borderColor: 'rgba(255, 99, 132, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Nhiệt độ tối đa (°C)',
-                data: gardenData.map(garden => garden.max_temperature || 0),
-                backgroundColor: gardenData.map(garden => (garden.max_temperature || 0) > 35 ? 'rgba(255, 159, 64, 0.8)' : 'rgba(255, 159, 64, 0.5)'),
+                data: gardenData.map(garden => parseFloat(garden.max_temperature) || 0),
+                backgroundColor: gardenData.map(garden => (parseFloat(garden.max_temperature) || 0) > 35 ? 'rgba(255, 159, 64, 0.8)' : 'rgba(255, 159, 64, 0.5)'),
                 borderColor: 'rgba(255, 159, 64, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Nhiệt độ tối thiểu (°C)',
-                data: gardenData.map(garden => garden.min_temperature || 0),
+                data: gardenData.map(garden => parseFloat(garden.min_temperature) || 0),
                 backgroundColor: 'rgba(54, 162, 235, 0.5)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
@@ -362,21 +374,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const humidityDatasets = [
             {
                 label: 'Độ ẩm không khí trung bình (%)',
-                data: gardenData.map(garden => garden.avg_humidity || 0),
+                data: gardenData.map(garden => parseFloat(garden.avg_humidity) || 0),
                 backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Độ ẩm không khí tối đa (%)',
-                data: gardenData.map(garden => garden.max_humidity || 0),
+                data: gardenData.map(garden => parseFloat(garden.max_humidity) || 0),
                 backgroundColor: 'rgba(153, 102, 255, 0.5)',
                 borderColor: 'rgba(153, 102, 255, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Độ ẩm không khí tối thiểu (%)',
-                data: gardenData.map(garden => garden.min_humidity || 0),
+                data: gardenData.map(garden => parseFloat(garden.min_humidity) || 0),
                 backgroundColor: 'rgba(255, 206, 86, 0.5)',
                 borderColor: 'rgba(255, 206, 86, 1)',
                 borderWidth: 1
@@ -411,22 +423,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const soilMoistureDatasets = [
             {
                 label: 'Độ ẩm đất trung bình (%)',
-                data: gardenData.map(garden => garden.avg_soil_moisture || 0),
-                backgroundColor: gardenData.map(garden => (garden.avg_soil_moisture || 0) < 20 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(54, 162, 235, 0.5)'),
+                data: gardenData.map(garden => parseFloat(garden.avg_soil_moisture) || 0),
+                backgroundColor: gardenData.map(garden => (parseFloat(garden.avg_soil_moisture) || 0) < 20 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(54, 162, 235, 0.5)'),
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Độ ẩm đất tối đa (%)',
-                data: gardenData.map(garden => garden.max_soil_moisture || 0),
+                data: gardenData.map(garden => parseFloat(garden.max_soil_moisture) || 0),
                 backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             },
             {
                 label: 'Độ ẩm đất tối thiểu (%)',
-                data: gardenData.map(garden => garden.min_soil_moisture || 0),
-                backgroundColor: gardenData.map(garden => (garden.min_soil_moisture || 0) < 20 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(255, 206, 86, 0.5)'),
+                data: gardenData.map(garden => parseFloat(garden.min_soil_moisture) || 0),
+                backgroundColor: gardenData.map(garden => (parseFloat(garden.min_soil_moisture) || 0) < 20 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(255, 206, 86, 0.5)'),
                 borderColor: 'rgba(255, 206, 86, 1)',
                 borderWidth: 1
             }
@@ -469,6 +481,137 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        const lightLabels = gardenData.map(garden => garden.name || 'Không xác định');
+        const lightDatasets = [
+            {
+                label: 'Ánh sáng trung bình (lux)',
+                data: gardenData.map(garden => parseFloat(garden.avg_light) || 0),
+                backgroundColor: 'rgba(255, 205, 86, 0.5)',
+                borderColor: 'rgba(255, 205, 86, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Ánh sáng tối đa (lux)',
+                data: gardenData.map(garden => parseFloat(garden.max_light) || 0),
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Ánh sáng tối thiểu (lux)',
+                data: gardenData.map(garden => parseFloat(garden.min_light) || 0),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }
+        ];
+        
+        const lightCtx = document.getElementById('lightChart')?.getContext('2d');
+        if (lightCtx && (sensorType === 'all' || sensorType === 'light')) {
+            lightChart = new Chart(lightCtx, {
+                type: chartType,
+                data: {
+                    labels: lightLabels,
+                    datasets: lightDatasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Thống kê ánh sáng' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Ánh sáng (lux)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        const waterLevelLabels = gardenData.map(garden => garden.name || 'Không xác định');
+        const waterLevelDatasets = [
+            {
+                label: 'Mực nước trung bình (cm)',
+                data: gardenData.map(garden => parseFloat(garden.avg_water_level) || 0),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Mực nước tối đa (cm)',
+                data: gardenData.map(garden => parseFloat(garden.max_water_level) || 0),
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Mực nước tối thiểu (cm)',
+                data: gardenData.map(garden => parseFloat(garden.min_water_level) || 0),
+                backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }
+        ];
+        
+        const waterLevelCtx = document.getElementById('waterLevelChart')?.getContext('2d');
+        if (waterLevelCtx && (sensorType === 'all' || sensorType === 'water_level')) {
+            waterLevelChart = new Chart(waterLevelCtx, {
+                type: chartType,
+                data: {
+                    labels: waterLevelLabels,
+                    datasets: waterLevelDatasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Thống kê mực nước' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Mực nước (cm)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        const rainLabels = gardenData.map(garden => garden.name || 'Không xác định');
+        const rainDatasets = [
+            {
+                label: 'Tỷ lệ mưa (%)',
+                data: gardenData.map(garden => parseFloat(garden.rain_percentage) || 0),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }
+        ];
+        
+        const rainCtx = document.getElementById('rainChart')?.getContext('2d');
+        if (rainCtx && (sensorType === 'all' || sensorType === 'rain')) {
+            rainChart = new Chart(rainCtx, {
+                type: chartType,
+                data: {
+                    labels: rainLabels,
+                    datasets: rainDatasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: { display: true, text: 'Thống kê tỷ lệ mưa' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: { display: true, text: 'Tỷ lệ mưa (%)' }
+                        }
+                    }
+                }
+            });
+        }
+
         if (gardenData.length > 0 && gardenData[0].monthly_stats) {
             const timeData = gardenData[0].monthly_stats;
             let groupedData = [];
@@ -485,13 +628,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             avg_temperature: 0,
                             avg_soil_moisture: 0,
                             avg_humidity: 0,
+                            avg_light: 0,
+                            avg_water_level: 0,
+                            rain_percentage: 0,
                             count: 0
                         };
                     }
                     
-                    quarters[yearQuarter].avg_temperature += entry.avg_temperature || 0;
-                    quarters[yearQuarter].avg_soil_moisture += entry.avg_soil_moisture || 0;
-                    quarters[yearQuarter].avg_humidity += entry.avg_humidity || 0;
+                    quarters[yearQuarter].avg_temperature += parseFloat(entry.avg_temperature) || 0;
+                    quarters[yearQuarter].avg_soil_moisture += parseFloat(entry.avg_soil_moisture) || 0;
+                    quarters[yearQuarter].avg_humidity += parseFloat(entry.avg_humidity) || 0;
+                    quarters[yearQuarter].avg_light += parseFloat(entry.avg_light) || 0;
+                    quarters[yearQuarter].avg_water_level += parseFloat(entry.avg_water_level) || 0;
+                    quarters[yearQuarter].rain_percentage += parseFloat(entry.rain_percentage) || 0;
                     quarters[yearQuarter].count += 1;
                 });
                 
@@ -499,7 +648,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     period: key,
                     avg_temperature: quarters[key].avg_temperature / quarters[key].count,
                     avg_soil_moisture: quarters[key].avg_soil_moisture / quarters[key].count,
-                    avg_humidity: quarters[key].avg_humidity / quarters[key].count
+                    avg_humidity: quarters[key].avg_humidity / quarters[key].count,
+                    avg_light: quarters[key].avg_light / quarters[key].count,
+                    avg_water_level: quarters[key].avg_water_level / quarters[key].count,
+                    rain_percentage: quarters[key].rain_percentage / quarters[key].count
                 }));
             } else if (timeRange === 'yearly') {
                 const years = {};
@@ -511,13 +663,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             avg_temperature: 0,
                             avg_soil_moisture: 0,
                             avg_humidity: 0,
+                            avg_light: 0,
+                            avg_water_level: 0,
+                            rain_percentage: 0,
                             count: 0
                         };
                     }
                     
-                    years[year].avg_temperature += entry.avg_temperature || 0;
-                    years[year].avg_soil_moisture += entry.avg_soil_moisture || 0;
-                    years[year].avg_humidity += entry.avg_humidity || 0;
+                    years[year].avg_temperature += parseFloat(entry.avg_temperature) || 0;
+                    years[year].avg_soil_moisture += parseFloat(entry.avg_soil_moisture) || 0;
+                    years[year].avg_humidity += parseFloat(entry.avg_humidity) || 0;
+                    years[year].avg_light += parseFloat(entry.avg_light) || 0;
+                    years[year].avg_water_level += parseFloat(entry.avg_water_level) || 0;
+                    years[year].rain_percentage += parseFloat(entry.rain_percentage) || 0;
                     years[year].count += 1;
                 });
                 
@@ -525,14 +683,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     period: key,
                     avg_temperature: years[key].avg_temperature / years[key].count,
                     avg_soil_moisture: years[key].avg_soil_moisture / years[key].count,
-                    avg_humidity: years[key].avg_humidity / years[key].count
+                    avg_humidity: years[key].avg_humidity / years[key].count,
+                    avg_light: years[key].avg_light / years[key].count,
+                    avg_water_level: years[key].avg_water_level / years[key].count,
+                    rain_percentage: years[key].rain_percentage / years[key].count
                 }));
             } else {
                 groupedData = timeData.map(entry => ({
                     period: entry.month,
-                    avg_temperature: entry.avg_temperature || 0,
-                    avg_soil_moisture: entry.avg_soil_moisture || 0,
-                    avg_humidity: entry.avg_humidity || 0
+                    avg_temperature: parseFloat(entry.avg_temperature) || 0,
+                    avg_soil_moisture: parseFloat(entry.avg_soil_moisture) || 0,
+                    avg_humidity: parseFloat(entry.avg_humidity) || 0,
+                    avg_light: parseFloat(entry.avg_light) || 0,
+                    avg_water_level: parseFloat(entry.avg_water_level) || 0,
+                    rain_percentage: parseFloat(entry.rain_percentage) || 0
                 }));
             }
             
@@ -565,6 +729,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     data: groupedData.map(entry => entry.avg_humidity),
                     backgroundColor: 'rgba(75, 192, 192, 0.5)',
                     borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    type: 'line',
+                    yAxisID: 'y1'
+                });
+            }
+            if (sensorType === 'all' || sensorType === 'light') {
+                timeDatasets.push({
+                    label: 'Ánh sáng trung bình (lux)',
+                    data: groupedData.map(entry => entry.avg_light),
+                    backgroundColor: 'rgba(255, 205, 86, 0.5)',
+                    borderColor: 'rgba(255, 205, 86, 1)',
+                    borderWidth: 1,
+                    type: 'line',
+                    yAxisID: 'y2'
+                });
+            }
+            if (sensorType === 'all' || sensorType === 'water_level') {
+                timeDatasets.push({
+                    label: 'Mực nước trung bình (cm)',
+                    data: groupedData.map(entry => entry.avg_water_level),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    type: 'line',
+                    yAxisID: 'y3'
+                });
+            }
+            if (sensorType === 'all' || sensorType === 'rain') {
+                timeDatasets.push({
+                    label: 'Tỷ lệ mưa (%)',
+                    data: groupedData.map(entry => entry.rain_percentage),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1,
                     type: 'line',
                     yAxisID: 'y1'
@@ -611,147 +808,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                 position: 'right',
                                 beginAtZero: true,
                                 max: 100,
-                                title: { display: true, text: 'Độ ẩm (%)' },
+                                title: { display: true, text: 'Độ ẩm/Tỷ lệ mưa (%)' },
                                 grid: { drawOnChartArea: false }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        if (gardenData.length > 0 && (sensorType === 'all' || sensorType === 'health')) {
-            const plantData = gardenData[0].plant_monthly_stats || [];
-            let groupedPlantData = [];
-            
-            if (plantData.length === 0) {
-                console.warn("Không có dữ liệu cây trồng cho vườn:", gardenData[0].name);
-                showError('Không có dữ liệu cây trồng để hiển thị biểu đồ sức khỏe.');
-                groupedPlantData = [{ period: 'Không có dữ liệu', avg_health: 0, plant_added: 0, unhealthy_count: 0 }];
-            } else {
-                if (timeRange === 'quarterly') {
-                    const quarters = {};
-                    plantData.forEach(entry => {
-                        const date = new Date(entry.month + '-01');
-                        const quarter = Math.floor(date.getMonth() / 3) + 1;
-                        const yearQuarter = `${date.getFullYear()} Q${quarter}`;
-                        
-                        if (!quarters[yearQuarter]) {
-                            quarters[yearQuarter] = {
-                                avg_health: 0,
-                                plant_added: 0,
-                                unhealthy_count: 0,
-                                count: 0
-                            };
-                        }
-                        
-                        quarters[yearQuarter].avg_health += entry.avg_health || 0;
-                        quarters[yearQuarter].plant_added += entry.plant_added || 0;
-                        quarters[yearQuarter].unhealthy_count += entry.unhealthy_count || 0;
-                        quarters[yearQuarter].count += 1;
-                    });
-                    
-                    groupedPlantData = Object.keys(quarters).map(key => ({
-                        period: key,
-                        avg_health: quarters[key].avg_health / quarters[key].count,
-                        plant_added: quarters[key].plant_added,
-                        unhealthy_count: quarters[key].unhealthy_count
-                    }));
-                } else if (timeRange === 'yearly') {
-                    const years = {};
-                    plantData.forEach(entry => {
-                        const year = entry.month.split('-')[0];
-                        
-                        if (!years[year]) {
-                            years[year] = {
-                                avg_health: 0,
-                                plant_added: 0,
-                                unhealthy_count: 0,
-                                count: 0
-                            };
-                        }
-                        
-                        years[year].avg_health += entry.avg_health || 0;
-                        years[year].plant_added += entry.plant_added || 0;
-                        years[year].unhealthy_count += entry.unhealthy_count || 0;
-                        years[year].count += 1;
-                    });
-                    
-                    groupedPlantData = Object.keys(years).map(key => ({
-                        period: key,
-                        avg_health: years[key].avg_health / years[key].count,
-                        plant_added: years[key].plant_added,
-                        unhealthy_count: years[key].unhealthy_count
-                    }));
-                } else {
-                    groupedPlantData = plantData.map(entry => ({
-                        period: entry.month,
-                        avg_health: entry.avg_health || 0,
-                        plant_added: entry.plant_added || 0,
-                        unhealthy_count: entry.unhealthy_count || 0
-                    }));
-                }
-            }
-            
-            const healthLabels = groupedPlantData.map(entry => entry.period);
-            const healthDatasets = [
-                {
-                    label: 'Sức khỏe trung bình (%)',
-                    data: groupedPlantData.map(entry => entry.avg_health),
-                    backgroundColor: groupedPlantData.map(entry => entry.avg_health < 50 ? 'rgba(255, 99, 132, 0.8)' : 'rgba(75, 192, 192, 0.5)'),
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Số cây thêm mới',
-                    data: groupedPlantData.map(entry => entry.plant_added),
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                    type: 'bar',
-                    yAxisID: 'y2'
-                }
-            ];
-            
-            const healthCtx = document.getElementById('healthChart')?.getContext('2d');
-            if (healthCtx) {
-                healthChart = new Chart(healthCtx, {
-                    type: 'line',
-                    data: {
-                        labels: healthLabels,
-                        datasets: healthDatasets
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `Thống kê sức khỏe cây trồng (${gardenData[0]?.name || 'Vườn'})`
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) label += ': ';
-                                        label += context.parsed.y.toFixed(1);
-                                        if (context.dataset.label.includes('Sức khỏe') && context.parsed.y < 50) {
-                                            label += ' (Cảnh báo: Sức khỏe thấp)';
-                                        }
-                                        return label;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                title: { display: true, text: 'Sức khỏe (%)' }
                             },
                             y2: {
                                 position: 'right',
                                 beginAtZero: true,
-                                title: { display: true, text: 'Số cây thêm mới' },
+                                title: { display: true, text: 'Ánh sáng (lux)' },
+                                grid: { drawOnChartArea: false }
+                            },
+                            y3: {
+                                position: 'right',
+                                beginAtZero: true,
+                                title: { display: true, text: 'Mực nước (cm)' },
                                 grid: { drawOnChartArea: false }
                             }
                         }
@@ -769,45 +838,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 tableBody.innerHTML += `
                     <tr>
                         <td>${garden.name || 'Không xác định'}</td>
-                        <td>${(garden.avg_temperature || 0).toFixed(1)}</td>
-                        <td>${(garden.max_temperature || 0).toFixed(1)}</td>
-                        <td>${(garden.min_temperature || 0).toFixed(1)}</td>
-                        <td>${(garden.avg_soil_moisture || 0).toFixed(1)}</td>
-                        <td>${(garden.max_soil_moisture || 0).toFixed(1)}</td>
-                        <td>${(garden.min_soil_moisture || 0).toFixed(1)}</td>
-                        <td>${(garden.avg_humidity || 0).toFixed(1)}</td>
-                        <td>${(garden.max_humidity || 0).toFixed(1)}</td>
-                        <td>${(garden.min_humidity || 0).toFixed(1)}</td>
-                        <td>${garden.plant_count || 0}</td>
-                        <td>${(garden.avg_health || 0).toFixed(1)}</td>
-                        <td>${garden.species_count || 0}</td>
+                        <td>${(parseFloat(garden.avg_temperature) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.max_temperature) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.min_temperature) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.avg_soil_moisture) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.max_soil_moisture) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.min_soil_moisture) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.avg_humidity) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.max_humidity) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.min_humidity) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.avg_light) || 0).toFixed(0)}</td>
+                        <td>${(parseFloat(garden.max_light) || 0).toFixed(0)}</td>
+                        <td>${(parseFloat(garden.min_light) || 0).toFixed(0)}</td>
+                        <td>${(parseFloat(garden.avg_water_level) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.max_water_level) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.min_water_level) || 0).toFixed(1)}</td>
+                        <td>${(parseFloat(garden.rain_percentage) || 0).toFixed(1)}</td>
                     </tr>
                 `;
             });
-        }
-    }
-
-    function updateAlerts(gardenData) {
-        const alertsContainer = document.getElementById('alertsContainer');
-        if (alertsContainer) {
-            alertsContainer.innerHTML = '';
-            let hasAlerts = false;
-            gardenData.forEach(garden => {
-                if (garden.alerts && garden.alerts.length > 0) {
-                    hasAlerts = true;
-                    alertsContainer.innerHTML += `<h4 class="mt-2">Cảnh báo cho ${garden.name}</h4>`;
-                    garden.alerts.forEach(alert => {
-                        alertsContainer.innerHTML += `
-                            <div class="alert alert-warning">
-                                ${alert.message} (Thời gian: ${alert.timestamp})
-                            </div>
-                        `;
-                    });
-                }
-            });
-            if (!hasAlerts) {
-                alertsContainer.innerHTML = '<div class="alert alert-info">Không có cảnh báo nào.</div>';
-            }
         }
     }
 

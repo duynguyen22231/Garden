@@ -3,143 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thống Kê - Vườn Cây Thông Minh</title>
+    <title>Thống Kê Vườn Cây</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <link rel="stylesheet" href="../css/stats.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/stats.js"></script>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <nav class="col-md-3 col-lg-2 d-md-block sidebar">
-                <div class="position-sticky pt-3">
-                    <h4 class="text-white text-center sidebar-title">🌿 Vườn Cây Thông Minh</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="home.html">
-                                <i class="bi bi-house-door"></i> Trang Chủ
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="garden.html">
-                                <i class="bi bi-tree"></i> Quản Lý Vườn Cây
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="microcontroller.html">
-                                <i class="bi bi-cpu"></i> Quản Lý Vi Điều Khiển
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active text-white" href="chart.html">
-                                <i class="bi bi-bar-chart-line"></i> Thống Kê
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <div class="sidebar-title text-center">🌿 Vườn Cây Thông Minh</div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="home.html">
+                            <i class="bi bi-house-door"></i> Trang Chủ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="gardens.html">
+                            <i class="bi bi-tree"></i> Quản Lý Vườn Cây
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="microcontroller.html">
+                            <i class="bi bi-cpu"></i> Quản lý vi điều khiển
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="stats.html">
+                            <i class="bi bi-bar-chart-line"></i> Thống Kê
+                        </a>
+                    </li>
+                </ul>   
             </nav>
 
-            <!-- Main Content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-3">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center border-bottom mb-4">
-                    <h1 class="h2 text-success">🌿 Thống Kê Vườn Cây</h1>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2>Thống Kê Vườn Cây</h2>
+                    <div class="dropdown auth-required">
+                        <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="account.html"><i class="bi bi-person"></i> Tài khoản</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><button class="dropdown-item text-danger" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Đăng xuất</button></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a></li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Filter Section -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="gardenSelect1" class="form-label">Vườn chính</label>
-                                <select id="gardenSelect1" class="form-select">
-                                    <option value="" disabled selected>Chọn vườn...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="gardenSelect2" class="form-label">Vườn so sánh (tùy chọn)</label>
-                                <select id="gardenSelect2" class="form-select">
-                                    <option value="" selected>Không so sánh</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="timeRange" class="form-label">Khoảng thời gian</label>
-                                <select id="timeRange" class="form-select">
-                                    <option value="24h">24 giờ</option>
-                                    <option value="7d" selected>7 ngày</option>
-                                    <option value="30d">30 ngày</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="startDate" class="form-label">Từ ngày</label>
-                                <input type="date" id="startDate" class="form-control">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="endDate" class="form-label">Đến ngày</label>
-                                <input type="date" id="endDate" class="form-control">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="chartType" class="form-label">Loại biểu đồ</label>
-                                <select id="chartType" class="form-select">
-                                    <option value="bar">Cột</option>
-                                    <option value="line">Đường</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button id="generateChartBtn" class="btn btn-primary w-100">
-                                    <i class="bi bi-bar-chart-line"></i> Tạo biểu đồ
-                                </button>
+                <div class="row mt-4 auth-required">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Tùy chọn thống kê</h5>
+                                <div class="mb-3">
+                                    <label for="gardenSelect1" class="form-label">Vườn chính</label>
+                                    <select class="form-select" id="gardenSelect1">
+                                        <option value="" disabled selected>Chọn vườn...</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="gardenSelect2" class="form-label">Vườn so sánh (tùy chọn)</label>
+                                    <select class="form-select" id="gardenSelect2">
+                                        <option value="" selected>Không so sánh</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="timeRange" class="form-label">Khoảng thời gian</label>
+                                    <select class="form-select" id="timeRange">
+                                        <option value="24h">24 giờ</option>
+                                        <option value="7d" selected>7 ngày</option>
+                                        <option value="30d">30 ngày</option>
+                                        <option value="90d">90 ngày</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="chartType" class="form-label">Loại biểu đồ</label>
+                                    <select class="form-select" id="chartType">
+                                        <option value="bar">Cột</option>
+                                        <option value="line">Đường</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="sensorType" class="form-label">Loại cảm biến</label>
+                                    <select class="form-select" id="sensorType">
+                                        <option value="all" selected>Tất cả</option>
+                                        <option value="temperature">Nhiệt độ</option>
+                                        <option value="humidity">Độ ẩm không khí</option>
+                                        <option value="soil_moisture">Độ ẩm đất</option>
+                                        <option value="light">Ánh sáng</option>
+                                        <option value="water_level">Mực nước</option>
+                                        <option value="rain">Mưa</option>
+                                    </select>
+                                </div>
+                                <button id="generateChartBtn" class="btn btn-primary" disabled>Tạo biểu đồ</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Charts -->
-                <div class="row">
-                    <div class="col-lg-6">
+                    <div class="col-md-8">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Nhiệt độ</h5>
                                 <canvas id="temperatureChart"></canvas>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-6">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Độ ẩm không khí</h5>
                                 <canvas id="humidityChart"></canvas>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-6">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Độ ẩm đất</h5>
                                 <canvas id="soilMoistureChart"></canvas>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-6">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">Sức khỏe cây trồng</h5>
-                                <canvas id="healthChart"></canvas>
+                                <h5 class="card-title">Ánh sáng</h5>
+                                <canvas id="lightChart"></canvas>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Mực nước</h5>
+                                <canvas id="waterLevelChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Tỷ lệ mưa</h5>
+                                <canvas id="rainChart"></canvas>
+                            </div>
+                        </div>
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title">Thống kê theo thời gian</h5>
@@ -149,13 +151,12 @@
                     </div>
                 </div>
 
-                <!-- Data Table -->
-                <div class="card mt-4">
+                <div class="card mt-4 auth-required">
                     <div class="card-body">
                         <h5 class="card-title">Dữ liệu chi tiết</h5>
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped">
-                                <thead class="table-dark">
+                            <table class="table table-bordered">
+                                <thead>
                                     <tr>
                                         <th>Vườn</th>
                                         <th>Nhiệt độ TB</th>
@@ -164,12 +165,16 @@
                                         <th>Độ ẩm đất TB</th>
                                         <th>Độ ẩm đất Max</th>
                                         <th>Độ ẩm đất Min</th>
-                                        <th>Độ ẩm không khí TB</th>
-                                        <th>Độ ẩm không khí Max</th>
-                                        <th>Độ ẩm không khí Min</th>
-                                        <th>Số cây</th>
-                                        <th>Sức khỏe TB</th>
-                                        <th>Số loài</th>
+                                        <th>Độ ẩm KK TB</th>
+                                        <th>Độ ẩm KK Max</th>
+                                        <th>Độ ẩm KK Min</th>
+                                        <th>Ánh sáng TB</th>
+                                        <th>Ánh sáng Max</th>
+                                        <th>Ánh sáng Min</th>
+                                        <th>Mực nước TB</th>
+                                        <th>Mực nước Max</th>
+                                        <th>Mực nước Min</th>
+                                        <th>Tỷ lệ mưa</th>
                                     </tr>
                                 </thead>
                                 <tbody id="statsTable"></tbody>
@@ -177,20 +182,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Alerts -->
-                <div class="card mt-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Cảnh báo</h5>
-                        <div id="alertsContainer" class="alert-container"></div>
-                    </div>
-                </div>
             </main>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../js/stats.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/dist/js/bootstrap-icons.min.js"></script>
 </body>
 </html>

@@ -216,3 +216,122 @@
 [18-Jul-2025 05:25:26 Europe/Berlin] Action received: get_accessible_gardens
 [18-Jul-2025 05:25:26 Europe/Berlin] Fetched 5 accessible gardens for user 1
 [18-Jul-2025 05:25:26 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:37:44 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:37:44 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:37:44 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:37:44 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:37:44 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:37:44 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:37:44 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:39:34 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:39:34 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:39:34 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:39:34 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:39:34 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:39:34 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:39:34 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:41:10 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:41:10 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:41:10 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:41:10 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:41:10 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:41:10 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:41:10 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:41:28 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:41:28 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:41:28 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:41:28 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:41:28 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched sensor stats for garden ID 9
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[18-Jul-2025 05:41:28 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[18-Jul-2025 05:41:36 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:41:36 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:41:36 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:41:36 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:41:36 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched sensor stats for garden ID 9
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[18-Jul-2025 05:41:36 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[18-Jul-2025 05:50:46 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:50:46 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:50:46 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:50:46 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:50:46 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:50:46 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:50:46 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:51:10 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:51:10 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:51:10 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:51:10 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:51:10 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched sensor stats for garden ID 9
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[18-Jul-2025 05:51:10 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[18-Jul-2025 05:52:59 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:52:59 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:52:59 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:52:59 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:52:59 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:52:59 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:52:59 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 05:53:03 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 05:53:03 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 05:53:03 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 05:53:03 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 05:53:03 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 05:53:03 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 05:53:03 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 06:31:39 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 06:31:39 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 06:31:39 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 06:31:39 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 06:31:39 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 06:31:39 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:31:39 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 06:33:42 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 06:33:42 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 06:33:42 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 06:33:42 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 06:33:42 Europe/Berlin] Action received: get_accessible_gardens
+[18-Jul-2025 06:33:42 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:33:42 Europe/Berlin] Accessible gardens fetched: 5 gardens for user 1
+[18-Jul-2025 06:33:54 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 06:33:54 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 06:33:54 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 06:33:54 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 06:33:54 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetching stats for garden IDs: 3, timeRange: 7d
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched garden info for garden ID 3: Found
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched sensor stats for garden ID 3
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched monthly stats for garden ID 3: 1 records
+[18-Jul-2025 06:33:54 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[18-Jul-2025 06:34:21 Europe/Berlin] Initializing AuthModel
+[18-Jul-2025 06:34:21 Europe/Berlin] findByToken: token=b174fdc96ec02b3c3ba4... , found={"user_id":1,"expiry":"2025-07-19 04:46:57"}
+[18-Jul-2025 06:34:21 Europe/Berlin] findById: userId=1, found=true
+[18-Jul-2025 06:34:21 Europe/Berlin] User ID: 1, isAdmin: true
+[18-Jul-2025 06:34:21 Europe/Berlin] Action received: get_stats
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetching stats for garden IDs: 3,9, timeRange: 7d
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched 5 accessible gardens for user 1
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched garden info for garden ID 3: Found
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched sensor stats for garden ID 3
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched monthly stats for garden ID 3: 1 records
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched sensor stats for garden ID 9
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched monthly stats for garden ID 9: 1 records
+[18-Jul-2025 06:34:21 Europe/Berlin] Fetched stats for 2 gardens for user 1
