@@ -74,9 +74,15 @@ class GardenModel {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([':id' => $garden_id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result && !empty($result['img']) ? $result['img'] : null;
+            
+            if ($result && !empty($result['img'])) {
+                return $result['img']; // Đảm bảo trả về dữ liệu hình ảnh
+            } else {
+                error_log("Không tìm thấy ảnh cho vườn ID: $garden_id");
+                return null;
+            }
         } catch (PDOException $e) {
-            error_log("Lỗi trong getGardenImage: " . $e->getMessage());
+            error_log("Lỗi khi lấy ảnh: " . $e->getMessage());
             return null;
         }
     }

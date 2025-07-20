@@ -72,13 +72,21 @@ class HomeModel {
         }
     }
 
-    public function saveGarden($data) {
+    public function saveGarden($data, $files) {
         try {
+            $imageData = $this->uploadImage($files['image'] ?? null);
+            
+            // Nếu không có ảnh, gán giá trị null thay vì bỏ qua
+            if ($imageData === null) {
+                $imageData = null; // Rõ ràng gán null
+            }
+
             $this->conn->beginTransaction();
             $sql = "INSERT INTO gardens (user_id, garden_names, location, area, note, latitude, longitude, img, status, created_at)
                     VALUES (:user_id, :garden_names, :location, :area, :note, :latitude, :longitude, :img, 'Hoạt động', NOW())";
             $stmt = $this->conn->prepare($sql);
-            $result = $stmt->execute([
+            
+            $params = [
                 ':user_id' => $data['user_id'],
                 ':garden_names' => $data['name'],
                 ':location' => $data['location'] ?? null,
@@ -86,8 +94,10 @@ class HomeModel {
                 ':note' => $data['note'] ?? 'Không có ghi chú',
                 ':latitude' => $data['latitude'],
                 ':longitude' => $data['longitude'],
-                ':img' => $data['img'] ?? null
-            ]);
+                ':img' => $imageData
+            ];
+
+            $result = $stmt->execute($params);
             error_log("saveGarden: user_id={$data['user_id']}, garden_names={$data['name']}, success=" . ($result ? 'true' : 'false'));
             $this->conn->commit();
             return $result;
@@ -96,6 +106,40 @@ class HomeModel {
             error_log("saveGarden: Error: " . $e->getMessage());
             throw new Exception("Lỗi khi lưu vườn: " . $e->getMessage());
         }
+    }
+
+    private function uploadImage($file) {
+        if (!$file || $file['error'] === UPLOAD_ERR_NO_FILE) {
+            error_log("uploadImage: No file uploaded or no file selected");
+            return null;
+        }
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            error_log("uploadImage: Upload error code: " . $file['error']);
+            return null;
+        }
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        $fileType = mime_content_type($file['tmp_name']);
+        if (!in_array($fileType, $allowedTypes)) {
+            error_log("uploadImage: Invalid file type: " . $fileType);
+            return null;
+        }
+
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $maxSize) {
+            error_log("uploadImage: File too large: " . $file['size'] . " bytes");
+            return null;
+        }
+
+        $imageData = file_get_contents($file['tmp_name']);
+        if ($imageData === false) {
+            error_log("uploadImage: Failed to read file contents");
+            return null;
+        }
+        
+        error_log("uploadImage: Successfully read image data, size: " . strlen($imageData) . " bytes");
+        return $imageData;
     }
 }
 ?>

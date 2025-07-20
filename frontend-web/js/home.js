@@ -125,16 +125,16 @@ function setupMapClickEvent() {
         if (popup) {
             popup.classList.add("show");
             document.getElementById("map")?.classList.add("popup-active");
-            document.getElementById("latitude").value = lat;
-            document.getElementById("longitude").value = lng;
             document.getElementById("garden_names").value = "";
             document.getElementById("location").value = "";
             document.getElementById("area").value = "";
             document.getElementById("note").value = "";
-            document.getElementById("image_url").value = "";
+            document.getElementById("image").value = "";
             document.getElementById("imagePreview").style.display = 'none';
             const ownerSelect = document.getElementById("owner_name");
             if (ownerSelect) ownerSelect.value = "";
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
         } else {
             console.error("Không tìm thấy phần tử gardenFormPopup");
         }
@@ -260,7 +260,7 @@ async function loadGardens() {
                             Địa chỉ: ${g.location || ''}<br>
                             Diện tích: ${g.area || 0} m²<br>
                             Ghi chú: ${g.note || ''}<br>
-                            ${g.img_url ? `<img src="${g.img_url}" style="max-width:100px;" onerror="this.style.display='none'" />` : ''}
+                            ${g.img_url ? `<img src="${g.img_url}" style="max-width:100px;" onerror="this.style.display='none'" />` : 'Không có ảnh'}
                         `)
                         .on('click', () => {
                             currentGardenId = g.id;
@@ -292,12 +292,26 @@ async function loadGardens() {
 }
 
 function setupImagePreview(isAdmin) {
-    const fileInput = document.getElementById("image_url");
+    const fileInput = document.getElementById("image");
     const preview = document.getElementById("imagePreview");
     if (fileInput && preview) {
         fileInput.addEventListener("change", () => {
             const file = fileInput.files[0];
             if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert("Vui lòng chọn một tệp hình ảnh hợp lệ (JPEG, PNG, GIF).");
+                    fileInput.value = "";
+                    preview.src = "";
+                    preview.style.display = 'none';
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("Kích thước ảnh không được vượt quá 5MB.");
+                    fileInput.value = "";
+                    preview.src = "";
+                    preview.style.display = 'none';
+                    return;
+                }
                 preview.src = URL.createObjectURL(file);
                 preview.style.display = 'block';
             } else {
@@ -340,7 +354,7 @@ function setupFormHandlers(isAdmin) {
             const note = document.getElementById("note")?.value.trim();
             const lat = document.getElementById("latitude")?.value;
             const lng = document.getElementById("longitude")?.value;
-            const fileInput = document.getElementById("image_url");
+            const fileInput = document.getElementById("image");
             const imageFile = fileInput?.files[0];
 
             if (!name || !ownerId || !address || !area || !lat || !lng) {

@@ -42,10 +42,10 @@ function loadGardenList() {
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'Is-Admin': isAdmin,
+            'Is-Admin': isAdmin.toString(),
             'Current-User-Id': currentUserId || ''
         },
-        body: JSON.stringify({ action: 'get_all_gardens' }) // Gửi action trong body
+        body: JSON.stringify({ action: 'get_all_gardens' })
     })
     .then(res => {
         if (!res.ok) {
@@ -82,93 +82,159 @@ function loadGardenList() {
         alert('Không thể tải danh sách vườn: ' + error.message);
     });
 }
+
 // Load component status from API with garden names
-function loadComponentStatus() {
+async function loadComponentStatus() {
     const token = getToken();
     if (!token) return;
 
     const { isAdmin, currentUserId } = getUserInfo();
-    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Is-Admin': isAdmin,
-            'Current-User-Id': currentUserId || ''
+    
+    try {
+        const response = await fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Is-Admin': isAdmin.toString(),
+                'Current-User-Id': currentUserId || ''
+            },
+            body: JSON.stringify({
+                action: 'getMicrocontrollerStatus',
+                isAdmin: isAdmin,
+                userId: currentUserId ? parseInt(currentUserId) : null
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
         }
-    })
-    .then(res => {
-        if (!res.ok) {
-            throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
-        }
-        return res.json();
-    })
-    .then(data => {
+
+        const data = await response.json();
+        console.log('API Response:', data);
         if (data.success) {
-            // Lấy tên vườn từ API garden
+            if (data.data.length === 0) {
+                showErrorMessage('Không có vi điều khiển nào để hiển thị. Vui lòng kiểm tra quyền truy cập hoặc thêm vi điều khiển.');
+                return;
+            }
             const gardenIds = [...new Set(data.data.map(comp => comp.garden_id))];
-            return fetch('http://192.168.1.123/SmartGarden/backend-api/routes/garden.php', {
+            const gardenResponse = await fetch('http://192.168.1.123/SmartGarden/backend-api/routes/garden.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
-                    'Is-Admin': isAdmin,
+                    'Is-Admin': isAdmin.toString(),
                     'Current-User-Id': currentUserId || ''
                 },
-                body: `action=get_gardens_by_ids&ids=${gardenIds.join(',')}`
-            })
-            .then(res => res.json())
-            .then(gardenData => {
-                if (gardenData.success) {
-                    const gardenMap = gardenData.data.reduce((map, garden) => {
-                        map[garden.id] = garden.garden_names;
-                        return map;
-                    }, {});
-                    updateComponentList(data.data, gardenMap);
-                } else {
-                    throw new Error(gardenData.message || 'Không thể tải tên vườn');
-                }
+                body: JSON.stringify({ 
+                    action: 'get_gardens_by_ids',
+                    ids: gardenIds.join(',')
+                })
             });
+
+            if (!gardenResponse.ok) {
+                throw new Error(`Lỗi HTTP: ${gardenResponse.status} - ${gardenResponse.statusText}`);
+            }
+
+            const gardenData = await gardenResponse.json();
+            console.log('Garden Data:', gardenData);
+            if (gardenData.success) {
+                const gardenMap = gardenData.data.reduce((map, garden) => {
+                    map[garden.id] = garden.garden_names || `Vườn ${garden.id}`;
+                    return map;
+                }, {});
+                updateComponentList(data.data, gardenMap);
+            } else {
+                throw new Error(gardenData.message || 'Không thể tải tên vườn');
+            }
         } else {
             throw new Error(data.message || 'Không thể tải danh sách vi điều khiển');
         }
-    })
-    .catch(error => {
-        console.error('Lỗi tải danh sách vi điều khiển:', error);
+    } catch (error) {
+        console.error('Lỗi tải trạng thái vi điều khiển:', error);
         showErrorMessage('Lỗi: ' + error.message);
-    });
+    }
 }
 
 // Update component list UI with garden names
 function updateComponentList(components, gardenMap) {
     const componentList = document.getElementById('component-list');
-    if (!componentList) return;
+    if (!componentList) {
+        console.error('Không tìm thấy phần tử #component-list');
+        return;
+    }
 
-    componentList.innerHTML = components.length === 0 
-        ? '<div class="col-12"><p class="text-muted text-center">Không có vi điều khiển nào.</p></div>'
-        : components.map(component => {
-            const gardenName = gardenMap[component.garden_id] || 'Không xác định';
-            const statusClass = component.status === 'online' ? 'text-success' : 'text-danger';
-            const statusText = component.status === 'online' ? 'Online' : 'Offline';
+    if (components.length === 0) {
+        componentList.innerHTML = '<div class="col-12"><p class="text-muted text-center">Không có vi điều khiển nào.</p></div>';
+        return;
+    }
 
-            return `
-                <div class="col-4">
-                    <div class="card h-100 component-card">
-                        <div class="card-body text-center">
-                            <i class="bi bi-cpu text-info"></i>
-                            <h6 class="card-title">${component.name}</h6>
-                            <p class="card-text">ID: ${component.mcu_id}</p>
-                            <p class="card-text">Vườn: ${gardenName}</p>
-                            <p class="card-text">IP: ${component.ip_address}</p>
-                            <p class="card-text component-status ${statusClass}">${statusText}</p>
-                            <p class="text-muted small">Cập nhật: ${component.last_seen ? new Date(component.last_seen).toLocaleString() : '--'}</p>
-                            <div class="action-buttons">
-                                <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(component)})'>Sửa</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteComponent('${component.mcu_id}', ${component.garden_id})">Xóa</button>
-                            </div>
+    componentList.innerHTML = components.map(component => {
+        const gardenName = gardenMap[component.garden_id] || 'Không xác định';
+        const statusClass = component.status === 'online' ? 'text-success' : 'text-danger';
+        const statusText = component.status === 'online' ? 'Online' : 'Offline';
+
+        return `
+            <div class="col-4">
+                <div class="card h-100 component-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-cpu text-info"></i>
+                        <h6 class="card-title">${component.name || 'Không có tên'}</h6>
+                        <p class="card-text">ID: ${component.mcu_id}</p>
+                        <p class="card-text">Vườn: ${gardenName}</p>
+                        <p class="card-text">IP: ${component.ip_address || 'Không xác định'}</p>
+                        <p class="card-text component-status ${statusClass}">${statusText}</p>
+                        <p class="text-muted small">Cập nhật: ${component.last_seen ? new Date(component.last_seen).toLocaleString('vi-VN') : '--'}</p>
+                        <p class="text-muted small">Tạo: ${component.created_at ? new Date(component.created_at).toLocaleString('vi-VN') : '--'}</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(component)})'>Sửa</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteComponent('${component.mcu_id}', ${component.garden_id})">Xóa</button>
                         </div>
                     </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
+    }).join('');
+}
+
+// Function to update Arduino IP from device
+function updateArduinoIp(mcuId, ipAddress) {
+    const token = getToken();
+    if (!token) return;
+
+    const { isAdmin, currentUserId } = getUserInfo();
+
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'Is-Admin': isAdmin.toString(),
+            'Current-User-Id': currentUserId || ''
+        },
+        body: JSON.stringify({ 
+            action: 'update_ip',
+            mcu_id: mcuId,
+            ip_address: ipAddress
+        })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
+        return res.json();
+    })
+    .then(data => {
+        if (data.success) {
+            console.log('Cập nhật IP thành công:', data.message);
+            loadComponentStatus();
+        } else {
+            console.error('Lỗi cập nhật IP:', data.message);
+            showErrorMessage('Lỗi cập nhật IP: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi khi cập nhật IP:', error);
+        showErrorMessage('Lỗi: ' + error.message);
+    });
 }
 
 // Show error message
@@ -180,23 +246,38 @@ function showErrorMessage(message) {
 }
 
 // Check API availability
-function checkAPI() {
+async function checkAPI() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=status', {
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => {
-        if (!res.ok) {
-            console.error('API không khả dụng');
-            showErrorMessage('Không thể kết nối đến máy chủ');
+    const { isAdmin, currentUserId } = getUserInfo();
+
+    try {
+        const response = await fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Is-Admin': isAdmin.toString(),
+                'Current-User-Id': currentUserId || ''
+            },
+            body: JSON.stringify({
+                action: 'check_api'
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
         }
-    })
-    .catch(error => {
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.message || 'Không thể kiểm tra trạng thái API');
+        }
+    } catch (error) {
         console.error('Lỗi kiểm tra API:', error);
-        showErrorMessage('Lỗi: ' + error.message);
-    });
+        showErrorMessage('Lỗi: Không thể kết nối đến máy chủ');
+    }
 }
 
 // Add component with garden permission check
@@ -205,6 +286,7 @@ function addComponent() {
     const garden_id = document.getElementById('add-garden-id').value;
     const ip_address = document.getElementById('add-ip-address').value.trim();
     const status = document.getElementById('add-status').value;
+    const mcu_id = 'mcu_' + Date.now(); // Tạo mcu_id tự động
     const errorMessage = document.getElementById('add-error-message');
     const { isAdmin, currentUserId } = getUserInfo();
 
@@ -227,18 +309,27 @@ function addComponent() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=add', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'Is-Admin': isAdmin,
+            'Is-Admin': isAdmin.toString(),
             'Current-User-Id': currentUserId || ''
         },
-        body: JSON.stringify({ name, garden_id, ip_address, status })
+        body: JSON.stringify({ 
+            action: 'addMicrocontroller',
+            name,
+            garden_id: parseInt(garden_id),
+            ip_address,
+            status,
+            mcu_id,
+            isAdmin,
+            userId: currentUserId ? parseInt(currentUserId) : null
+        })
     })
     .then(res => {
-        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status}`);
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
         return res.json();
     })
     .then(data => {
@@ -310,18 +401,27 @@ function updateComponent() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=update', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'Is-Admin': isAdmin,
+            'Is-Admin': isAdmin.toString(),
             'Current-User-Id': currentUserId || ''
         },
-        body: JSON.stringify({ mcu_id, name, garden_id, ip_address, status })
+        body: JSON.stringify({ 
+            action: 'updateMicrocontroller',
+            mcu_id,
+            name,
+            garden_id: parseInt(garden_id),
+            ip_address,
+            status,
+            isAdmin,
+            userId: currentUserId ? parseInt(currentUserId) : null
+        })
     })
     .then(res => {
-        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status}`);
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
         return res.json();
     })
     .then(data => {
@@ -351,18 +451,24 @@ function deleteComponent(mcu_id, garden_id) {
 
     const { isAdmin, currentUserId } = getUserInfo();
 
-    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php?action=delete', {
+    fetch('http://192.168.1.123/SmartGarden/backend-api/routes/microcontrollers.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'Is-Admin': isAdmin,
+            'Is-Admin': isAdmin.toString(),
             'Current-User-Id': currentUserId || ''
         },
-        body: JSON.stringify({ mcu_id, garden_id })
+        body: JSON.stringify({ 
+            action: 'deleteMicrocontroller',
+            mcu_id,
+            garden_id: parseInt(garden_id),
+            isAdmin,
+            userId: currentUserId ? parseInt(currentUserId) : null
+        })
     })
     .then(res => {
-        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status}`);
+        if (!res.ok) throw new Error(`Lỗi HTTP: ${res.status} - ${res.statusText}`);
         return res.json();
     })
     .then(data => {
@@ -393,5 +499,5 @@ window.onload = function() {
     checkAPI();
     loadGardenList();
     loadComponentStatus();
-    setInterval(loadComponentStatus, 30000); 
+    setInterval(loadComponentStatus, 10000); 
 };

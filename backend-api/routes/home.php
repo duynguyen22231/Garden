@@ -97,11 +97,13 @@ try {
 
         case 'get_gardens':
             $response = $controller->getAllGardens($userId, $isAdmin);
-            break;
+        break;
 
         case 'save_garden':
-            $response = $controller->saveGarden($input, $userId, $isAdmin);
-            break;
+            error_log("save_garden request data: " . print_r($input, true));
+            error_log("save_garden files: " . print_r($_FILES, true));
+            $response = $controller->saveGarden($input, $_FILES, $userId, $isAdmin);
+        break;
 
         default:
             http_response_code(400);

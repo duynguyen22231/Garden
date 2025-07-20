@@ -25,36 +25,34 @@ class GardenController {
     }
 
     public function getGardenImage($garden_id, $userId, $isAdmin) {
-    try {
-        // Kiểm tra quyền truy cập vườn
-        if (!$isAdmin) {
-            $garden = $this->model->getGardenById($garden_id);
-            if (!$garden || $garden['user_id'] != $userId) {
-                http_response_code(403);
-                echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập ảnh của vườn này']);
+        try {
+            // Kiểm tra quyền truy cập vườn
+            if (!$isAdmin) {
+                $garden = $this->model->getGardenById($garden_id);
+                if (!$garden || $garden['user_id'] != $userId) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'message' => 'Bạn không có quyền truy cập ảnh của vườn này']);
+                    exit;
+                }
+            }
+
+            $image = $this->model->getGardenImage($garden_id);
+                if ($image) {
+                    header('Content-Type: image/jpeg');
+                    echo $image; // Đảm bảo trả về dữ liệu hình ảnh
+                } else {
+                    error_log("Không tìm thấy ảnh cho vườn ID: $garden_id");
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'message' => 'Không tìm thấy ảnh']);
+                    exit;
+                }
+            } catch (Exception $e) {
+                error_log("Lỗi trong getGardenImage: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
                 exit;
             }
-        }
-
-        $image = $this->model->getGardenImage($garden_id);
-        if ($image) {
-            header('Content-Type: image/jpeg');
-            header('Cache-Control: max-age=86400');
-            echo $image;
-            exit;
-        } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Không tìm thấy ảnh']);
-            exit;
-        }
-    } catch (Exception $e) {
-        error_log("Lỗi trong getGardenImage: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
-        exit;
     }
-}
-
     public function getStatusOptions() {
         $statuses = $this->model->getStatusOptions();
         echo json_encode(['success' => true, 'data' => $statuses]);

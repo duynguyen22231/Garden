@@ -119,35 +119,25 @@ class HomeController {
         }
     }
 
-    public function saveGarden($data, $userId, $isAdmin) {
+    public function saveGarden($postData, $files, $userId, $isAdmin) {
         try {
-            $imageBlob = null;
-            if (!empty($data['image'])) {
-                $imageBlob = file_get_contents($data['image']['tmp_name']);
-                if ($imageBlob === false) {
-                    error_log("saveGarden: Failed to read uploaded image");
-                    return ['success' => false, 'message' => 'Không thể đọc file hình ảnh'];
-                }
-            }
-
-            $ownerId = $isAdmin && isset($data['user_id']) ? (int)$data['user_id'] : $userId;
+            $ownerId = $isAdmin && isset($postData['user_id']) ? (int)$postData['user_id'] : $userId;
             if (!$this->model->userExists($ownerId)) {
                 error_log("saveGarden: Invalid or non-existent user_id $ownerId");
                 return ['success' => false, 'message' => 'Chủ vườn không hợp lệ'];
             }
 
             $gardenData = [
-                'name' => htmlspecialchars($data['name'] ?? ''),
+                'name' => htmlspecialchars($postData['name'] ?? ''),
                 'user_id' => $ownerId,
-                'location' => htmlspecialchars($data['location'] ?? null),
-                'area' => (float)($data['area'] ?? null),
-                'note' => htmlspecialchars($data['note'] ?? null),
-                'latitude' => (float)($data['latitude'] ?? 0),
-                'longitude' => (float)($data['longitude'] ?? 0),
-                'img' => $imageBlob
+                'location' => htmlspecialchars($postData['location'] ?? null),
+                'area' => (float)($postData['area'] ?? null),
+                'note' => htmlspecialchars($postData['note'] ?? null),
+                'latitude' => (float)($postData['latitude'] ?? 0),
+                'longitude' => (float)($postData['longitude'] ?? 0)
             ];
 
-            $success = $this->model->saveGarden($gardenData);
+            $success = $this->model->saveGarden($gardenData, $files);
             error_log("saveGarden: name={$gardenData['name']}, user_id=$ownerId, success=" . ($success ? 'true' : 'false'));
             return [
                 'success' => $success,
