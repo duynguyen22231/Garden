@@ -66,6 +66,16 @@ try {
             $controller->getGardenNumber(['garden_id' => $garden_id]);
             break;
 
+        case 'save_schedule':
+    if (empty($input['schedule']) || !is_array($input['schedule'])) {
+        throw new Exception('Thiếu dữ liệu lịch trình');
+    }
+    $schedule = $input['schedule'];
+    
+    
+    $controller->saveSchedule(['schedule' => $schedule]);
+    break;
+
         case 'save_garden_assignment':
             if (empty($input) || !isset($input['garden_id']) || !isset($input['garden_number'])) {
                 throw new Exception('Missing or invalid fields: garden_id, garden_number');
@@ -73,11 +83,25 @@ try {
             $controller->saveGardenAssignment($input);
             break;
 
+        case 'get_schedules':
+            if (empty($input['garden_id'])) {
+                throw new Exception('Missing or invalid field: garden_id');
+            }
+            $controller->getSchedules($input);
+            break;
+
+        case 'delete_schedule':
+            if (empty($input['id'])) {
+                throw new Exception('Thiếu ID lịch trình');
+            }
+            $controller->deleteSchedule(['id' => (int)$input['id']]);
+        break;
+
         default:
             throw new Exception('Invalid action');
     }
 } catch (Exception $e) {
-    error_log('Error in sensor.php: action=' . ($action ?? 'unknown') . ', message=' . $e->getMessage());
+    error_log('Error in sensor.php: action=' . ($action ?? 'unknown') . ', message=' . $e->getMessage() . ', input=' . json_encode($input, JSON_UNESCAPED_UNICODE));
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }

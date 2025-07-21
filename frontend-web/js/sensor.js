@@ -55,20 +55,40 @@ async function apiRequest(endpoint, action, method = 'POST', data = {}, retries 
             const options = {
                 method,
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ action, ...data })
             };
-            if (method === 'POST') {
-                options.body = JSON.stringify({ action, ...data });
-            }
+
+            console.log('Sending request to:', endpoint);
+            console.log('Request data:', options.body);
+
             const res = await fetch(`http://192.168.1.123/SmartGarden/backend-api/routes/${endpoint}`, options);
-            const text = await res.text();
-            const response = JSON.parse(text);
-            if (!response.success) throw new Error(response.message || 'Request failed');
+            
+            const responseText = await res.text();
+            console.log('Raw response:', responseText);
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            let response;
+            try {
+                response = JSON.parse(responseText);
+            } catch (jsonError) {
+                throw new Error(`Invalid JSON response: ${responseText}`);
+            }
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Request failed');
+            }
+            
             return response;
         } catch (error) {
             if (attempt === retries) throw error;
-            await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+            console.error(`Attempt ${attempt + 1} failed:`, error);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
         }
     }
 }
@@ -190,11 +210,139 @@ async function updateDeviceStatusUI(statusData, gardenNumber) {
         console.error('Lỗi updateDeviceStatusUI:', error);
     }
 }
+async function saveSchedule() {
+    try {
+        const device = document.getElementById('deviceSelect').value;
+        const action = document.getElementById('actionSelect').value === 'on' ? 1 : 0;
+        const startTime = document.getElementById('startTimeInput').value;
+        const endTime = document.getElementById('endTimeInput').value;
+        const selectedDate = document.getElementById('dateInput').value;
+        const gardenId = getGardenIdFromUrl();
+        const mcuId = 'mcu_00' + gardenId;
+
+        // Validate input
+        if (!device || !startTime || !selectedDate) {
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+            return;
+        }
+
+        // Chuẩn bị dữ liệu đúng định dạng
+        const scheduleData = {
+            device_name: device,
+            action: action,
+            time: startTime,
+            end_time: endTime,
+            date: selectedDate,
+            garden_id: gardenId,
+            mcu_id: mcuId
+        };
+
+        console.log('Dữ liệu gửi đi:', { schedule: scheduleData });
+
+        const response = await apiRequest('sensor.php', 'save_schedule', 'POST', { 
+            schedule: scheduleData 
+        });
+
+        if (response.success) {
+            alert('Đã lưu lịch thành công!');
+            $('#scheduleModal').modal('hide');
+            displaySchedules(gardenId);
+        } else {
+            alert('Lỗi: ' + (response.message || 'Không thể lưu lịch'));
+        }
+    } catch (error) {
+        console.error('Lỗi khi lưu lịch:', error);
+        alert('Lỗi khi lưu lịch: ' + error.message);
+    }
+}
+
+function displaySchedules(gardenId) {
+    apiRequest('sensor.php', 'get_schedules', 'POST', { garden_id: gardenId })
+        .then(response => {
+            const scheduleContainer = document.getElementById('schedule-container');
+            
+            if (response.data && response.data.length > 0) {
+                const schedulesHTML = response.data.map(schedule => {
+                    // Format thời gian từ HH:MM:SS thành HH:MM
+                    const startTime = schedule.time ? schedule.time.substring(0, 5) : '';
+                    const endTime = schedule.end_time ? schedule.end_time.substring(0, 5) : '';
+                    
+                    return `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5>${schedule.device_name === 'den1' ? 'Đèn 1' : 'Quạt 1'}</h5>
+                                <p>Trạng thái: ${schedule.action ? 'BẬT' : 'TẮT'}</p>
+                                <p>Thời gian: ${startTime} ${endTime ? `- ${endTime}` : ''}</p>
+                                <p>Ngày: ${schedule.date}</p>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSchedule(${schedule.id})">
+                                    Xóa
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                scheduleContainer.innerHTML = schedulesHTML;
+            }
+        });
+}
+
+function populateDeviceOptionsByGarden(gardenNumber) {
+    const deviceSelect = document.getElementById('deviceSelect');
+    const deviceMap = {
+        1: ['den1', 'quat1'],
+        2: ['den2', 'quat2']
+    };
+
+    const displayNameMap = {
+        'den1': 'Đèn 1',
+        'quat1': 'Quạt 1',
+        'den2': 'Đèn 2',
+        'quat2': 'Quạt 2'
+    };
+
+    const devices = deviceMap[gardenNumber] || [];
+    deviceSelect.innerHTML = '<option value="">Chọn thiết bị</option>';
+    devices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device;
+        option.textContent = displayNameMap[device];
+        deviceSelect.appendChild(option);
+    });
+
+}
+
+async function deleteSchedule(scheduleId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa lịch trình này?')) {
+        return;
+    }
+
+    try {
+        const response = await apiRequest('sensor.php', 'delete_schedule', 'POST', { id: scheduleId });
+        if (response.success) {
+            alert('Đã xóa lịch trình thành công');
+            displaySchedules(getGardenIdFromUrl());
+        } else {
+            alert('Xóa lịch trình thất bại: ' + response.message);
+        }
+    } catch (error) {
+        console.error('Lỗi khi xóa lịch trình:', error);
+        alert('Lỗi khi xóa lịch trình: ' + error.message);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     setActiveNavLink();
     const gardenId = getGardenIdFromUrl();
     if (gardenId) {
+        const gardenNumber = await assignGarden(gardenId);
         await loadGardenData(gardenId);
+        await displaySchedules(gardenId);
+        populateDeviceOptionsByGarden(gardenNumber);
+
+        // Periodically refresh sensor data and schedules every 30 seconds
+        setInterval(async () => {
+            await loadGardenData(gardenId);
+            await displaySchedules(gardenId);
+        }, 30000); // 30 seconds
     }
 });
