@@ -8,40 +8,72 @@ class SensorModel {
         $this->db = $db;
     }
 
+    public function getMcuId($mac_address) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT mcu_id 
+                FROM mcu_assignments 
+                WHERE mac_address = :mac_address
+            ");
+            $stmt->execute([':mac_address' => $mac_address]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                return ['success' => true, 'mcu_id' => $result['mcu_id']];
+            }
+            // Tự động tạo bản ghi với mcu_id="mcu_001"
+            $stmt = $this->db->prepare("
+                INSERT INTO mcu_assignments (mac_address, mcu_id, created_at)
+                VALUES (:mac_address, 'mcu_001', NOW())
+            ");
+            $stmt->execute([':mac_address' => $mac_address]);
+            return ['success' => true, 'mcu_id' => 'mcu_001'];
+        } catch (PDOException $e) {
+            error_log("Lỗi getMcuId: " . $e->getMessage());
+            throw new Exception("Lỗi lấy hoặc tạo mcu_id: " . $e->getMessage());
+        }
+    }
+
     public function getSensorReadings($garden_number) {
         try {
             $stmt = $this->db->prepare("
-                SELECT * FROM sensor_readings 
+                SELECT soil_moisture, temperature, humidity, water_level_cm, is_raining, created_at 
+                FROM sensor_readings 
                 WHERE garden_number = :garden_number 
                 ORDER BY created_at DESC 
                 LIMIT 1
             ");
             $stmt->execute([':garden_number' => (int)$garden_number]);
-            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("getSensorReadings: garden_number=$garden_number, result=" . json_encode($result));
+            return $result ?: null;
         } catch (PDOException $e) {
             error_log("Lỗi getSensorReadings: " . $e->getMessage());
             throw new Exception("Lỗi lấy dữ liệu cảm biến: " . $e->getMessage());
         }
     }
 
-    public function saveSensorData($data) {
+    public function saveSensorData($garden_number, $data) {
         try {
+            error_log("saveSensorData: garden_number=$garden_number, data=" . json_encode($data));
             $stmt = $this->db->prepare("
                 INSERT INTO sensor_readings (
                     garden_number, soil_moisture, temperature, humidity, water_level_cm, is_raining, created_at
                 ) VALUES (
-                    :garden_number, :soil_moisture, :temperature, :humidity, :water_level_cm, :is_raining, NOW()
+                    :garden_number, :soil_moisture, :temperature, :humidity, :water_level_cm, :is_raining, :created_at
                 )
             ");
-            $stmt->execute([
-                ':garden_number' => (int)$data['garden_number'],
-                ':soil_moisture' => (int)$data['soil_moisture'],
-                ':temperature' => (float)$data['temperature'],
-                ':humidity' => (float)$data['humidity'],
-                ':water_level_cm' => (float)$data['water_level_cm'],
-                ':is_raining' => (int)$data['is_raining']
-            ]);
-            return true;
+            $params = [
+                ':garden_number' => (int)$garden_number,
+                ':soil_moisture' => floatval($data['soil_moisture']),
+                ':temperature' => floatval($data['temperature']),
+                ':humidity' => floatval($data['humidity']),
+                ':water_level_cm' => floatval($data['water_level_cm']),
+                ':is_raining' => (int)$data['is_raining'],
+                ':created_at' => date('Y-m-d H:i:s')
+            ];
+            error_log("saveSensorData: SQL params=" . json_encode($params));
+            $stmt->execute($params);
+            error_log("saveSensorData: Successfully saved data for garden_number=$garden_number");
         } catch (PDOException $e) {
             error_log("Lỗi saveSensorData: " . $e->getMessage());
             throw new Exception("Lỗi lưu dữ liệu cảm biến: " . $e->getMessage());
@@ -157,41 +189,42 @@ class SensorModel {
         }
     }
 
-   public function saveSchedule($device_name, $action, $time, $end_time, $date, $garden_id, $mcu_id) {
-    try {
-        $is_range = ($end_time !== null && $end_time !== '') ? 1 : 0;
-        
-        $stmt = $this->db->prepare("
-            INSERT INTO schedules 
-            (device_name, action, is_range, time, end_time, date, garden_id, mcu_id) 
-            VALUES 
-            (:device_name, :action, :is_range, :time, :end_time, :date, :garden_id, :mcu_id)
-        ");
-        
-        $stmt->execute([
-            ':device_name' => $device_name,
-            ':action' => $action,
-            ':is_range' => $is_range,
-            ':time' => $time,
-            ':end_time' => $is_range ? $end_time : null,
-            ':date' => $date,
-            ':garden_id' => $garden_id,
-            ':mcu_id' => $mcu_id
-        ]);
+    public function saveSchedule($device_name, $action, $time, $end_time, $date, $garden_id, $mcu_id) {
+        try {
+            $is_range = ($end_time !== null && $end_time !== '') ? 1 : 0;
+            
+            $stmt = $this->db->prepare("
+                INSERT INTO schedules 
+                (device_name, action, is_range, time, end_time, date, garden_id, mcu_id, created_at) 
+                VALUES 
+                (:device_name, :action, :is_range, :time, :end_time, :date, :garden_id, :mcu_id, NOW())
+            ");
+            
+            $stmt->execute([
+                ':device_name' => $device_name,
+                ':action' => $action,
+                ':is_range' => $is_range,
+                ':time' => $time,
+                ':end_time' => $is_range ? $end_time : null,
+                ':date' => $date,
+                ':garden_id' => $garden_id,
+                ':mcu_id' => $mcu_id
+            ]);
 
-        return true;
-    } catch (PDOException $e) {
-        error_log("Database error in saveSchedule: " . $e->getMessage());
-        throw new Exception("Lỗi database: " . $e->getMessage());
+            return true;
+        } catch (PDOException $e) {
+            error_log("Database error in saveSchedule: " . $e->getMessage());
+            throw new Exception("Lỗi database: " . $e->getMessage());
+        }
     }
-}
 
     public function getSchedules($garden_id) {
         try {
             $stmt = $this->db->prepare("
                 SELECT * FROM schedules 
                 WHERE garden_id = :garden_id 
-                ORDER BY created_at DESC
+                AND (date >= CURDATE() OR is_range = 1)
+                ORDER BY date, time
             ");
             $stmt->execute([':garden_id' => (int)$garden_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -199,6 +232,53 @@ class SensorModel {
             error_log("Lỗi getSchedules: " . $e->getMessage());
             throw new Exception("Lỗi lấy lịch trình: " . $e->getMessage());
         }
-}
+    }
 
+    public function getGardenAssignments($mcu_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT garden_id, garden_number
+                FROM garden_assignments
+                WHERE garden_id IN (
+                    SELECT garden_id
+                    FROM microcontrollers
+                    WHERE mcu_id = :mcu_id
+                )
+            ");
+            $stmt->execute([':mcu_id' => $mcu_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getGardenAssignments: " . $e->getMessage());
+            throw new Exception("Lỗi lấy danh sách gán vườn: " . $e->getMessage());
+        }
+    }
+
+    public function getSchedulesByMcu($mcu_id) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT s.*
+                FROM schedules s
+                WHERE s.mcu_id = :mcu_id
+                AND (s.date >= CURDATE() OR s.is_range = 1)
+                ORDER BY s.date, s.time
+            ");
+            $stmt->execute([':mcu_id' => $mcu_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getSchedulesByMcu: " . $e->getMessage());
+            throw new Exception("Lỗi lấy lịch trình theo mcu_id: " . $e->getMessage());
+        }
+    }
+
+    public function deleteSchedule($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM schedules WHERE id = :id");
+            $stmt->execute([':id' => (int)$id]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Lỗi deleteSchedule: " . $e->getMessage());
+            throw new Exception("Lỗi xóa lịch trình: " . $e->getMessage());
+        }
+    }
 }
+?>

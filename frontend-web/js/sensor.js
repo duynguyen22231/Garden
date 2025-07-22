@@ -31,8 +31,21 @@ function getGardenIdFromUrl() {
 
 async function assignGarden(gardenId) {
     try {
+        // Lấy garden_number
         const data = await apiRequest('sensor.php', 'get_garden_number', 'POST', { garden_id: gardenId });
-        return data.garden_number || 1;
+        const gardenNumber = data.garden_number || 1;
+
+        // Gán vườn với mcu_id="mcu_001"
+        await apiRequest('sensor.php', 'save_garden_assignment', 'POST', {
+            garden_id: gardenId,
+            garden_number: gardenNumber
+        });
+
+        // Đảm bảo mcu_id="mcu_001" trong mcu_assignments
+        const macAddress = '94:E6:86:0D:EF:B4'; // MAC của ESP32
+        await apiRequest('sensor.php', 'get_mcu_id', 'POST', { mac_address: macAddress });
+
+        return gardenNumber;
     } catch (error) {
         console.error('Lỗi assignGarden:', error);
         return 1; // Mặc định là vườn 1 nếu có lỗi
@@ -210,6 +223,7 @@ async function updateDeviceStatusUI(statusData, gardenNumber) {
         console.error('Lỗi updateDeviceStatusUI:', error);
     }
 }
+
 async function saveSchedule() {
     try {
         const device = document.getElementById('deviceSelect').value;
@@ -218,20 +232,60 @@ async function saveSchedule() {
         const endTime = document.getElementById('endTimeInput').value;
         const selectedDate = document.getElementById('dateInput').value;
         const gardenId = getGardenIdFromUrl();
-        const mcuId = 'mcu_00' + gardenId;
+        const mcuId = 'mcu_001'; // Sử dụng mcu_id cố định cho một ESP32
 
-        // Validate input
+        // Validate required fields
         if (!device || !startTime || !selectedDate) {
             alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
             return;
+        }
+
+        // Format times to HH:MM:SS
+        const formattedStartTime = startTime + ':00';
+        const formattedEndTime = endTime ? endTime + ':00' : '';
+
+        // Validate time format (HH:MM)
+        if (!/^[0-2][0-9]:[0-5][0-9]$/.test(startTime)) {
+            alert('Thời gian bắt đầu không hợp lệ (HH:MM)');
+            return;
+        }
+        if (endTime && !/^[0-2][0-9]:[0-5][0-9]$/.test(endTime)) {
+            alert('Thời gian kết thúc không hợp lệ (HH:MM)');
+            return;
+        }
+
+        // Validate date format (YYYY-MM-DD)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+            alert('Ngày không hợp lệ (YYYY-MM-DD)');
+            return;
+        }
+
+        // Check if schedule is in the past
+        const now = new Date();
+        const scheduleDateTime = new Date(`${selectedDate}T${formattedStartTime}`);
+        if (scheduleDateTime < now) {
+            alert('Lịch trình không thể được đặt trong quá khứ!');
+            return;
+        }
+
+        // Validate time range (at least 1 minute difference, allow AM/PM)
+        if (endTime) {
+            const startDateTime = new Date(`${selectedDate}T${formattedStartTime}`);
+            const endDateTime = new Date(`${selectedDate}T${formattedEndTime}`);
+            const timeDiff = (endDateTime - startDateTime) / 1000 / 60; // Difference in minutes
+
+            if (timeDiff < 1) {
+                alert('Thời gian kết thúc phải ít nhất 1 phút sau thời gian bắt đầu!');
+                return;
+            }
         }
 
         // Chuẩn bị dữ liệu đúng định dạng
         const scheduleData = {
             device_name: device,
             action: action,
-            time: startTime,
-            end_time: endTime,
+            time: formattedStartTime,
+            end_time: formattedEndTime,
             date: selectedDate,
             garden_id: gardenId,
             mcu_id: mcuId
@@ -266,11 +320,18 @@ function displaySchedules(gardenId) {
                     // Format thời gian từ HH:MM:SS thành HH:MM
                     const startTime = schedule.time ? schedule.time.substring(0, 5) : '';
                     const endTime = schedule.end_time ? schedule.end_time.substring(0, 5) : '';
+                    const deviceNameMap = {
+                        'den1': 'Đèn 1',
+                        'quat1': 'Quạt 1',
+                        'den2': 'Đèn 2',
+                        'quat2': 'Quạt 2'
+                    };
+                    const displayName = deviceNameMap[schedule.device_name] || schedule.device_name;
                     
                     return `
                         <div class="card mb-3">
                             <div class="card-body">
-                                <h5>${schedule.device_name === 'den1' ? 'Đèn 1' : 'Quạt 1'}</h5>
+                                <h5>${displayName}</h5>
                                 <p>Trạng thái: ${schedule.action ? 'BẬT' : 'TẮT'}</p>
                                 <p>Thời gian: ${startTime} ${endTime ? `- ${endTime}` : ''}</p>
                                 <p>Ngày: ${schedule.date}</p>
@@ -282,6 +343,8 @@ function displaySchedules(gardenId) {
                     `;
                 }).join('');
                 scheduleContainer.innerHTML = schedulesHTML;
+            } else {
+                scheduleContainer.innerHTML = '<p>Chưa có lịch trình nào.</p>';
             }
         });
 }
@@ -308,7 +371,6 @@ function populateDeviceOptionsByGarden(gardenNumber) {
         option.textContent = displayNameMap[device];
         deviceSelect.appendChild(option);
     });
-
 }
 
 async function deleteSchedule(scheduleId) {

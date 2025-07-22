@@ -487,3 +487,76 @@
 [20-Jul-2025 18:35:42 Europe/Berlin] Error in getSensorStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
 [20-Jul-2025 18:35:42 Europe/Berlin] Error in getMonthlyStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
 [20-Jul-2025 18:35:42 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[21-Jul-2025 18:43:34 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:43:34 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:43:34 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:43:34 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:43:34 Europe/Berlin] Action received: get_accessible_gardens
+[21-Jul-2025 18:43:34 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:43:34 Europe/Berlin] Accessible gardens fetched: 7 gardens for user 1
+[21-Jul-2025 18:44:07 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:44:07 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:44:07 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:44:07 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:44:07 Europe/Berlin] Action received: get_stats
+[21-Jul-2025 18:44:07 Europe/Berlin] Fetching stats for garden IDs: 9, timeRange: 7d
+[21-Jul-2025 18:44:07 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:07 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:07 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[21-Jul-2025 18:44:07 Europe/Berlin] Error in getSensorStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:07 Europe/Berlin] Error in getMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:07 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[21-Jul-2025 18:44:18 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:44:18 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:44:18 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:44:18 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:44:18 Europe/Berlin] Action received: get_stats
+[21-Jul-2025 18:44:18 Europe/Berlin] Fetching stats for garden IDs: 25, timeRange: 7d
+[21-Jul-2025 18:44:18 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:18 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:18 Europe/Berlin] Fetched garden info for garden ID 25: Found
+[21-Jul-2025 18:44:18 Europe/Berlin] Error in getSensorStats for garden ID 25: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:18 Europe/Berlin] Error in getMonthlyStats for garden ID 25: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:18 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[21-Jul-2025 18:44:26 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:44:26 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:44:26 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:44:26 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:44:26 Europe/Berlin] Action received: get_stats
+[21-Jul-2025 18:44:26 Europe/Berlin] Fetching stats for garden IDs: 3, timeRange: 7d
+[21-Jul-2025 18:44:26 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:26 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:26 Europe/Berlin] Fetched garden info for garden ID 3: Found
+[21-Jul-2025 18:44:26 Europe/Berlin] Error in getSensorStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:26 Europe/Berlin] Error in getMonthlyStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:26 Europe/Berlin] Fetched stats for 1 gardens for user 1
+[21-Jul-2025 18:44:38 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:44:38 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:44:38 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:44:38 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:44:38 Europe/Berlin] Action received: get_stats
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetching stats for garden IDs: 3,9, timeRange: 24h
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetched garden info for garden ID 3: Found
+[21-Jul-2025 18:44:38 Europe/Berlin] Error in getSensorStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:38 Europe/Berlin] Error in getMonthlyStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[21-Jul-2025 18:44:38 Europe/Berlin] Error in getSensorStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:38 Europe/Berlin] Error in getMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:38 Europe/Berlin] Fetched stats for 2 gardens for user 1
+[21-Jul-2025 18:44:51 Europe/Berlin] Initializing AuthModel
+[21-Jul-2025 18:44:51 Europe/Berlin] findByToken: token=ce855763ad67f77f3a5c... , found={"user_id":1,"expiry":"2025-07-22 14:17:19"}
+[21-Jul-2025 18:44:51 Europe/Berlin] findById: userId=1, found=true
+[21-Jul-2025 18:44:51 Europe/Berlin] User ID: 1, isAdmin: true
+[21-Jul-2025 18:44:51 Europe/Berlin] Action received: get_stats
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetching stats for garden IDs: 3,9, timeRange: 24h
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetched 7 accessible gardens for user 1
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetched garden info for garden ID 3: Found
+[21-Jul-2025 18:44:51 Europe/Berlin] Error in getSensorStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:51 Europe/Berlin] Error in getMonthlyStats for garden ID 3: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetched garden info for garden ID 9: Found
+[21-Jul-2025 18:44:51 Europe/Berlin] Error in getSensorStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:51 Europe/Berlin] Error in getMonthlyStats for garden ID 9: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'light' in 'field list'
+[21-Jul-2025 18:44:51 Europe/Berlin] Fetched stats for 2 gardens for user 1

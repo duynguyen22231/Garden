@@ -36,11 +36,12 @@ class SensorController {
             $this->sendResponse([
                 'success' => true,
                 'data' => $readings ?: [
-                    'soil_moisture' => '--',
-                    'temperature' => '--',
-                    'humidity' => '--',
-                    'water_level_cm' => '--',
-                    'is_raining' => 0
+                    'soil_moisture' => 0,
+                    'temperature' => 0,
+                    'humidity' => 0,
+                    'water_level_cm' => 0,
+                    'is_raining' => 0,
+                    'created_at' => date('Y-m-d H:i:s')
                 ]
             ]);
         } catch (Exception $e) {
@@ -50,13 +51,19 @@ class SensorController {
 
     public function saveSensorData($input) {
         try {
-            $requiredFields = ['garden_number', 'soil_moisture', 'temperature', 'humidity', 'water_level_cm', 'is_raining'];
-            foreach ($requiredFields as $field) {
-                if (!isset($input[$field])) {
-                    throw new Exception("Missing required field: $field");
-                }
+            $garden_number = $input['garden_number'] ?? null;
+            $data = [
+                'soil_moisture' => $input['soil_moisture'] ?? 0,
+                'temperature' => $input['temperature'] ?? 0,
+                'humidity' => $input['humidity'] ?? 0,
+                'water_level_cm' => $input['water_level_cm'] ?? 0,
+                'is_raining' => $input['is_raining'] ?? 0,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            if (!$garden_number || !in_array($garden_number, [1, 2])) {
+                throw new Exception('Invalid garden number');
             }
-            $this->model->saveSensorData($input);
+            $this->model->saveSensorData($garden_number, $data);
             $this->sendResponse(['success' => true, 'message' => 'Data saved successfully']);
         } catch (Exception $e) {
             $this->handleError($e, 400, 'Error saving sensor data');
@@ -123,65 +130,53 @@ class SensorController {
     }
 
     public function saveSchedule($input) {
-    try {
-        // Debug: log received input
-        error_log('Received data: ' . print_r($input, true));
+        try {
+            error_log('Received data: ' . print_r($input, true));
 
-        // Kiểm tra dữ liệu đầu vào
-        if (!isset($input['schedule']) || !is_array($input['schedule'])) {
-            throw new Exception("Dữ liệu lịch trình không hợp lệ");
-        }
-
-        $schedule = $input['schedule'];
-
-        // Validate required fields
-        $requiredFields = ['device_name', 'action', 'time', 'date', 'garden_id', 'mcu_id'];
-        foreach ($requiredFields as $field) {
-            if (!isset($schedule[$field])) {
-                throw new Exception("Thiếu trường bắt buộc: $field");
+            if (!isset($input['schedule']) || !is_array($input['schedule'])) {
+                throw new Exception("Dữ liệu lịch trình không hợp lệ");
             }
-        }
 
-        // Validate time format
-        if (!preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', $schedule['time'])) {
-            throw new Exception("Định dạng thời gian không hợp lệ (HH:MM)");
-        }
-
-        // Validate date format
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $schedule['date'])) {
-            throw new Exception("Định dạng ngày không hợp lệ (YYYY-MM-DD)");
-        }
-
-        // Validate end_time if provided
-        if (isset($schedule['end_time']) && $schedule['end_time'] !== '') {
-            if (!preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', $schedule['end_time'])) {
-                throw new Exception("Định dạng thời gian kết thúc không hợp lệ (HH:MM)");
+            $schedule = $input['schedule'];
+            $requiredFields = ['device_name', 'action', 'time', 'date', 'garden_id', 'mcu_id'];
+            foreach ($requiredFields as $field) {
+                if (!isset($schedule[$field])) {
+                    throw new Exception("Thiếu trường bắt buộc: $field");
+                }
             }
-            if (strtotime($schedule['time']) >= strtotime($schedule['end_time'])) {
-                throw new Exception("Thời gian kết thúc phải sau thời gian bắt đầu");
+
+            if (!preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $schedule['time'])) {
+                throw new Exception("Định dạng thời gian không hợp lệ (HH:MM:SS)");
             }
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $schedule['date'])) {
+                throw new Exception("Định dạng ngày không hợp lệ (YYYY-MM-DD)");
+            }
+
+            if (isset($schedule['end_time']) && $schedule['end_time'] !== '') {
+                if (!preg_match('/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/', $schedule['end_time'])) {
+                    throw new Exception("Định dạng thời gian kết thúc không hợp lệ (HH:MM:SS)");
+                }
+                if (strtotime($schedule['time']) >= strtotime($schedule['end_time'])) {
+                    throw new Exception("Thời gian kết thúc phải sau thời gian bắt đầu");
+                }
+            }
+
+            $this->model->saveSchedule(
+                $schedule['device_name'],
+                $schedule['action'],
+                $schedule['time'],
+                isset($schedule['end_time']) ? $schedule['end_time'] : null,
+                $schedule['date'],
+                $schedule['garden_id'],
+                $schedule['mcu_id']
+            );
+
+            $this->sendResponse(['success' => true, 'message' => 'Lưu lịch thành công']);
+        } catch (Exception $e) {
+            $this->handleError($e, 400, 'Error saving schedule');
         }
-
-        // Gọi model để lưu dữ liệu
-        $this->model->saveSchedule(
-            $schedule['device_name'],
-            $schedule['action'],
-            $schedule['time'],
-            isset($schedule['end_time']) ? $schedule['end_time'] : null,
-            $schedule['date'],
-            $schedule['garden_id'],
-            $schedule['mcu_id']
-        );
-
-        $this->sendResponse(['success' => true, 'message' => 'Lưu lịch thành công']);
-    } catch (Exception $e) {
-        error_log('Error in saveSchedule: ' . $e->getMessage());
-        $this->sendResponse([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 400);
     }
-}
 
     public function getSchedules($input) {
         try {
@@ -216,10 +211,8 @@ class SensorController {
                 throw new Exception('Thiếu ID lịch trình');
             }
 
-            $stmt = $this->db->prepare("DELETE FROM schedules WHERE id = :id");
-            $stmt->execute([':id' => (int)$input['id']]);
-
-            if ($stmt->rowCount() === 0) {
+            $result = $this->model->deleteSchedule($input['id']);
+            if (!$result) {
                 throw new Exception('Không tìm thấy lịch trình để xóa');
             }
 
@@ -228,4 +221,47 @@ class SensorController {
             $this->handleError($e, 400, 'Lỗi khi xóa lịch trình');
         }
     }
+
+    public function getMcuId($input) {
+        try {
+            $mac_address = $input['mac_address'] ?? '';
+            if (empty($mac_address)) {
+                throw new Exception('Missing mac_address');
+            }
+            $result = $this->model->getMcuId($mac_address);
+            if (!$result['success']) {
+                throw new Exception($result['message']);
+            }
+            $this->sendResponse(['success' => true, 'mcu_id' => $result['mcu_id']]);
+        } catch (Exception $e) {
+            $this->handleError($e, 400, 'Error retrieving MCU ID');
+        }
+    }
+
+    public function getGardenAssignments($input) {
+        try {
+            $mcu_id = $input['mcu_id'] ?? '';
+            if (empty($mcu_id)) {
+                throw new Exception('Missing mcu_id');
+            }
+            $assignments = $this->model->getGardenAssignments($mcu_id);
+            $this->sendResponse(['success' => true, 'data' => $assignments]);
+        } catch (Exception $e) {
+            $this->handleError($e, 400, 'Error retrieving garden assignments');
+        }
+    }
+
+    public function getSchedulesByMcu($input) {
+        try {
+            $mcu_id = $input['mcu_id'] ?? '';
+            if (empty($mcu_id)) {
+                throw new Exception('Missing mcu_id');
+            }
+            $schedules = $this->model->getSchedulesByMcu($mcu_id);
+            $this->sendResponse(['success' => true, 'data' => $schedules]);
+        } catch (Exception $e) {
+            $this->handleError($e, 400, 'Error retrieving schedules by MCU');
+        }
+    }
 }
+?>

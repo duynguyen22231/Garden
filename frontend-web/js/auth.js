@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (data.success && data.data && data.data.token) {
                         localStorage.setItem("accessToken", data.data.token);
                         console.log("Token saved to localStorage:", localStorage.getItem("accessToken"));
-                        alert(data.message || "Đăng nhập thành công!");
+                        alert(data.message || "Chào mừng bạn trở lại!");
                         const savedToken = localStorage.getItem("accessToken");
                         if (!savedToken) {
                             console.error("Token not found in localStorage after saving");
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(data => {
                     console.log("Register response:", data);
                     if (data.success) {
-                        alert(data.message || "Đăng ký thành công!");
+                        alert(data.message || "Bạn đã đăng ký thành công! Hãy đăng nhập để tiếp tục.");
                         setTimeout(() => {
                             window.location.href = "login.html";
                         }, 1000);

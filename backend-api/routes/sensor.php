@@ -28,6 +28,15 @@ try {
     }
 
     switch ($action) {
+        case 'get_current_time':
+            echo json_encode([
+                'success' => true,
+                'time' => date('H:i:s'),
+                'date' => date('Y-m-d'),
+                'timezone' => 'Asia/Ho_Chi_Minh'
+            ]);
+            break;
+        
         case 'get_readings':
             $garden_number = isset($input['garden_number']) ? (int)$input['garden_number'] : (isset($_GET['garden_number']) ? (int)$_GET['garden_number'] : 0);
             if (!in_array($garden_number, [1, 2])) {
@@ -67,14 +76,11 @@ try {
             break;
 
         case 'save_schedule':
-    if (empty($input['schedule']) || !is_array($input['schedule'])) {
-        throw new Exception('Thiếu dữ liệu lịch trình');
-    }
-    $schedule = $input['schedule'];
-    
-    
-    $controller->saveSchedule(['schedule' => $schedule]);
-    break;
+            if (empty($input['schedule']) || !is_array($input['schedule'])) {
+                throw new Exception('Thiếu dữ liệu lịch trình');
+            }
+            $controller->saveSchedule(['schedule' => $input['schedule']]);
+            break;
 
         case 'save_garden_assignment':
             if (empty($input) || !isset($input['garden_id']) || !isset($input['garden_number'])) {
@@ -95,7 +101,28 @@ try {
                 throw new Exception('Thiếu ID lịch trình');
             }
             $controller->deleteSchedule(['id' => (int)$input['id']]);
-        break;
+            break;
+
+        case 'get_mcu_id':
+            if (empty($input['mac_address'])) {
+                throw new Exception('Missing mac_address');
+            }
+            $controller->getMcuId($input);
+            break;
+
+        case 'get_garden_assignments':
+            if (empty($input['mcu_id'])) {
+                throw new Exception('Missing mcu_id');
+            }
+            $controller->getGardenAssignments($input);
+            break;
+
+        case 'get_schedules_by_mcu':
+            if (empty($input['mcu_id'])) {
+                throw new Exception('Missing mcu_id');
+            }
+            $controller->getSchedulesByMcu($input);
+            break;
 
         default:
             throw new Exception('Invalid action');
@@ -105,3 +132,4 @@ try {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
 }
+?>
