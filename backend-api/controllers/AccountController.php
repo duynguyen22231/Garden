@@ -27,14 +27,14 @@ class AccountController {
         }
     }
 
-    public function addUser($username, $email, $password, $administrator_rights, $full_name, $img_user = null) {
+    public function addUser($username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user = null) {
         try {
             if (empty($username) || empty($email) || empty($password) || empty($full_name)) {
-                throw new Exception("Vui lòng điền đầy đủ thông tin");
+                throw new Exception("Vui lòng điền đầy đủ thông tin bắt buộc");
             }
             $administrator_rights = (int)$administrator_rights;
             $img_data = $img_user ? file_get_contents($img_user['tmp_name']) : null;
-            $result = $this->userModel->addUser($username, $email, $password, $administrator_rights, $full_name, $img_data);
+            $result = $this->userModel->addUser($username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_data);
             if ($result) {
                 return [
                     'success' => true,
@@ -54,14 +54,14 @@ class AccountController {
         }
     }
 
-    public function updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $img_user = null) {
+    public function updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user = null) {
         try {
             if (empty($id)) {
                 throw new Exception("ID người dùng không hợp lệ");
             }
             $administrator_rights = (int)$administrator_rights;
             $img_data = $img_user && $img_user['error'] == 0 ? file_get_contents($img_user['tmp_name']) : null;
-            $result = $this->userModel->updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $img_data);
+            $result = $this->userModel->updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_data);
             if ($result) {
                 return [
                     'success' => true,

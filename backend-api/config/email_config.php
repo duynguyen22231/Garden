@@ -1,33 +1,39 @@
 <?php
-// Kiểm tra sự tồn tại của tệp autoload
-$autoloadPath = __DIR__ . '/../vendor/autoload.php';
-if (!file_exists($autoloadPath)) {
-    error_log("Lỗi: Không tìm thấy vendor/autoload.php tại $autoloadPath. Vui lòng chạy 'composer require phpmailer/phpmailer' trong thư mục backend-api.");
-    return false;
-}
-
-// Bao gồm PHPMailer classes
-require_once $autoloadPath;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Khởi tạo PHPMailer
+require '../vendor/autoload.php';
+
 $mail = new PHPMailer(true);
 
 try {
-    // Cấu hình server
     $mail->isSMTP();
-    $mail->Host = 'smtp.gmail.com'; // SMTP host của Gmail
+    $mail->Host = 'smtp.gmail.com';
     $mail->SMTPAuth = true;
-    $mail->Username = 'your_email@gmail.com'; // Thay bằng email của bạn
-    $mail->Password = 'your_app_password'; // Thay bằng mật khẩu ứng dụng
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = 587;
-
-    // Cấu hình mã hóa ký tự
+    $mail->Username = 'ntd8406@gmail.com'; // Thay bằng email của bạn
+    $mail->Password = 'nlmd cwmn kufn dalo'; // Thay bằng App Password của bạn
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    $mail->Port = 465;
     $mail->CharSet = 'UTF-8';
+    $mail->setFrom('ntd8406@gmail.com', 'Smart Garden');
+    $mail->isHTML(true);
 } catch (Exception $e) {
-    error_log("Lỗi khởi tạo PHPMailer: " . $e->getMessage());
-    return false;
+    error_log("Lỗi khởi tạo PHPMailer: {$mail->ErrorInfo}");
+}
+
+function sendAlertEmail($to, $subject, $body) {
+    global $mail;
+    try {
+        $mail->clearAddresses();
+        $mail->addAddress($to);
+        $mail->Subject = $subject;
+        $mail->Body = $body;
+        $mail->send();
+        error_log("Email sent to $to with subject: $subject");
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to send email to $to. Error: {$mail->ErrorInfo}");
+        return false;
+    }
 }
 ?>

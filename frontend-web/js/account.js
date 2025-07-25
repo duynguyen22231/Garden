@@ -10,7 +10,6 @@ function setActiveNavLink() {
     });
 }
 
-// Get token from localStorage
 function getToken() {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -21,7 +20,6 @@ function getToken() {
     return token;
 }
 
-// Get user info
 function getUserInfo() {
     return {
         isAdmin: localStorage.getItem('isAdmin') === 'true',
@@ -29,7 +27,6 @@ function getUserInfo() {
     };
 }
 
-// Load account status from API
 function loadUserStatus() {
     const token = getToken();
     if (!token) return;
@@ -79,7 +76,6 @@ function loadUserStatus() {
         });
 }
 
-// Update account list UI
 function updateUserList(users) {
     const userList = document.getElementById('account-list');
     userList.innerHTML = '';
@@ -100,6 +96,7 @@ function updateUserList(users) {
                         <p class="card-text user-role">Vai trò: ${roleText}</p>
                         <p class="card-text">Email: ${user.email}</p>
                         <p class="card-text">Họ tên: ${user.full_name}</p>
+                        <p class="card-text">Số điện thoại: ${user.phone_number || 'Chưa cung cấp'}</p>
                         <p class="text-muted small">Tham gia: ${new Date(user.created_at).toLocaleString()}</p>
                         <div class="action-buttons">
                             ${isCurrentUser || isAdmin ? `
@@ -120,7 +117,6 @@ function showErrorMessage(message) {
     userList.innerHTML = `<div class="alert alert-danger text-center">${message}</div>`;
 }
 
-// Check API availability
 function checkAPI() {
     const token = getToken();
     if (!token) return;
@@ -147,7 +143,6 @@ function checkAPI() {
         });
 }
 
-// Add user
 function addUser() {
     const { isAdmin } = getUserInfo();
     if (!isAdmin) {
@@ -204,7 +199,6 @@ function addUser() {
     });
 }
 
-// Open edit modal
 function openEditModal(user) {
     const { isAdmin, currentUserId } = getUserInfo();
     if (!isAdmin && user.id != currentUserId) {
@@ -223,15 +217,15 @@ function openEditModal(user) {
     document.getElementById('edit-email').value = user.email || '';
     document.getElementById('edit-password').value = '';
     document.getElementById('edit-admin-rights').value = user.administrator_rights ? 1 : 0;
-    document.getElementById('edit-admin-rights').disabled = !isAdmin; // Disable admin rights for non-admins
+    document.getElementById('edit-admin-rights').disabled = !isAdmin;
     document.getElementById('edit-full-name').value = user.full_name || '';
+    document.getElementById('edit-phone-number').value = user.phone_number || '';
     document.getElementById('edit-error-message').classList.add('d-none');
 
     const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
     modal.show();
 }
 
-// Update user
 function updateUser() {
     const { isAdmin, currentUserId } = getUserInfo();
     const formData = new FormData(document.getElementById('edit-user-form'));
@@ -301,7 +295,6 @@ function updateUser() {
     });
 }
 
-// Delete user
 function deleteUser(id) {
     const { isAdmin } = getUserInfo();
     if (!isAdmin) {
@@ -341,7 +334,6 @@ function deleteUser(id) {
     });
 }
 
-// Initialize when page loads
 window.onload = function() {
     setActiveNavLink();
     checkAPI();
@@ -349,7 +341,6 @@ window.onload = function() {
     setInterval(loadUserStatus, 30000);
 };
 
-// Logout function
 function logout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("isAdmin");

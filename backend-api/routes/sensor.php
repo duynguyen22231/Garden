@@ -117,11 +117,31 @@ try {
             $controller->getGardenAssignments($input);
             break;
 
+        case 'set_threshold':
+            $controller->setThreshold($input);
+            break;
+
+        case 'get_thresholds':
+            $controller->getThresholds($input);
+            break;
+
         case 'get_schedules_by_mcu':
             if (empty($input['mcu_id'])) {
                 throw new Exception('Missing mcu_id');
             }
             $controller->getSchedulesByMcu($input);
+            break;
+
+        case 'get_alerts':
+            $controller->getAlerts($input);
+            break;
+
+        case 'trigger_alert':
+            $controller->triggerAlert($input);
+            break;
+
+        case 'check_and_send_alert':
+            $controller->checkAndSendAlert($input);
             break;
 
         default:

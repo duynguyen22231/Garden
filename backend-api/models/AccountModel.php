@@ -13,7 +13,7 @@ class AccountModel {
     }
 
     public function getAllUsers() {
-        $query = "SELECT id, username, email, administrator_rights, full_name, created_at, img_user FROM users";
+        $query = "SELECT id, username, email, administrator_rights, full_name, phone_number, created_at, img_user FROM users";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
@@ -25,6 +25,7 @@ class AccountModel {
                 'email' => $row['email'],
                 'administrator_rights' => (bool)$row['administrator_rights'],
                 'full_name' => $row['full_name'],
+                'phone_number' => $row['phone_number'],
                 'created_at' => $row['created_at'],
                 'img_user' => $row['img_user'] ? base64_encode($row['img_user']) : null
             ];
@@ -32,33 +33,22 @@ class AccountModel {
         return $users;
     }
 
-    public function addUser($username, $email, $password, $administrator_rights, $full_name, $img_user = null) {
+    public function addUser($username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user = null) {
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $query = "INSERT INTO users (username, email, password, administrator_rights, full_name, img_user) VALUES (:username, :email, :password, :administrator_rights, :full_name, :img_user)";
+        $query = "INSERT INTO users (username, email, password, administrator_rights, full_name, phone_number, img_user) VALUES (:username, :email, :password, :administrator_rights, :full_name, :phone_number, :img_user)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':username', $username);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashed_password);
         $stmt->bindParam(':administrator_rights', $administrator_rights, PDO::PARAM_INT);
         $stmt->bindParam(':full_name', $full_name);
-
-        // Handle base64 image
-        $img_data = null;
-        if ($img_user) {
-            // Remove data URL prefix if present (e.g., "data:image/jpeg;base64,")
-            $img_user = preg_replace('/^data:image\/[a-z]+;base64,/', '', $img_user);
-            $img_data = base64_decode($img_user);
-            if ($img_data === false) {
-                throw new Exception("Dữ liệu ảnh không hợp lệ");
-            }
-        }
-        $stmt->bindParam(':img_user', $img_data, PDO::PARAM_LOB);
+        $stmt->bindParam(':phone_number', $phone_number);
+        $stmt->bindParam(':img_user', $img_user, PDO::PARAM_LOB);
         return $stmt->execute();
     }
 
-    public function updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $img_user = null) {
-        // Get current user data to preserve unchanged fields
-        $query = "SELECT username, email, administrator_rights, full_name FROM users WHERE id = :id";
+    public function updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user = null) {
+        $query = "SELECT username, email, administrator_rights, full_name, phone_number FROM users WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -68,19 +58,19 @@ class AccountModel {
             throw new Exception("Không tìm thấy người dùng với ID: $id");
         }
 
-        // Use existing values if not provided
         $username = !empty($username) ? $username : $user['username'];
         $email = !empty($email) ? $email : $user['email'];
         $administrator_rights = isset($administrator_rights) ? (int)$administrator_rights : $user['administrator_rights'];
         $full_name = !empty($full_name) ? $full_name : $user['full_name'];
+        $phone_number = !empty($phone_number) ? $phone_number : $user['phone_number'];
 
-        // Build dynamic query
-        $query = "UPDATE users SET username = :username, email = :email, administrator_rights = :administrator_rights, full_name = :full_name";
+        $query = "UPDATE users SET username = :username, email = :email, administrator_rights = :administrator_rights, full_name = :full_name, phone_number = :phone_number";
         $params = [
             ':username' => $username,
             ':email' => $email,
             ':administrator_rights' => $administrator_rights,
             ':full_name' => $full_name,
+            ':phone_number' => $phone_number,
             ':id' => $id
         ];
 
@@ -91,16 +81,7 @@ class AccountModel {
         }
         if ($img_user !== null) {
             $query .= ", img_user = :img_user";
-            // Handle base64 image
-            $img_data = null;
-            if ($img_user) {
-                $img_user = preg_replace('/^data:image\/[a-z]+;base64,/', '', $img_user);
-                $img_data = base64_decode($img_user);
-                if ($img_data === false) {
-                    throw new Exception("Dữ liệu ảnh không hợp lệ");
-                }
-            }
-            $params[':img_user'] = $img_data;
+            $params[':img_user'] = $img_user;
         }
         $query .= " WHERE id = :id";
 

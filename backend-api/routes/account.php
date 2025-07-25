@@ -8,13 +8,11 @@ require_once '../controllers/AccountController.php';
 require_once '../models/AuthModel.php';
 require_once '../config/database.php';
 
-// Handle OPTIONS request for CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
-// Get token from Authorization header
 $headers = getallheaders();
 $authHeader = $headers['Authorization'] ?? '';
 $token = '';
@@ -36,7 +34,6 @@ if (!$tokenData) {
     exit;
 }
 
-// Get user information to check permissions
 $userId = $tokenData['user_id'];
 $user = $authModel->findById($userId);
 if (!$user) {
@@ -46,26 +43,12 @@ if (!$user) {
 }
 $isAdmin = $user['administrator_rights'] == 1;
 
-// Override with headers if provided
 $isAdmin = isset($headers['Is-Admin']) ? ($headers['Is-Admin'] === 'true') : $isAdmin;
 $userId = $headers['Current-User-Id'] ?? $userId;
 
 $controller = new AccountController();
 
-// Handle actions
-$action = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-    if (strpos($contentType, 'application/json') !== false) {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $action = $input['action'] ?? '';
-    } elseif (strpos($contentType, 'multipart/form-data') !== false || strpos($contentType, 'application/x-www-form-urlencoded') !== false) {
-        $action = $_POST['action'] ?? '';
-    } else {
-        $action = $_GET['action'] ?? '';
-    }
-}
-
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 if (empty($action)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Hành động không được cung cấp']);
@@ -75,7 +58,6 @@ if (empty($action)) {
 switch ($action) {
     case 'status':
         if (!$isAdmin) {
-            // Non-admins only see their own account
             $users = $controller->getUserStatus();
             if ($users['success']) {
                 $users['data'] = array_filter($users['data'], fn($u) => $u['id'] == $userId);
@@ -101,16 +83,22 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Bạn không có quyền thêm người dùng']);
             exit;
         }
-        $username = $_POST['username'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $password = $_POST['password'] ?? '';
+        if (empty($_POST['username']) || empty($_POST['email']) || empty($_POST['password']) || empty($_POST['full_name'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Vui lòng điền đầy đủ thông tin bắt buộc']);
+            exit;
+        }
+        $username = $_POST['username'];
+        $email = $_POST['email'];
+        $password = $_POST['password'];
         $administrator_rights = $_POST['administrator_rights'] ?? 0;
-        $full_name = $_POST['full_name'] ?? '';
+        $full_name = $_POST['full_name'];
+        $phone_number = $_POST['phone_number'] ?? null;
         $img_user = $_FILES['img_user'] ?? null;
 
-        // Validate image upload
         if ($img_user && $img_user['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($img_user['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Lỗi tải lên ảnh: Mã lỗi ' . $img_user['error']
@@ -119,6 +107,7 @@ switch ($action) {
             }
             $validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
             if (!in_array($img_user['type'], $validImageTypes)) {
+                http_response_code(400);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG, GIF.'
@@ -126,7 +115,7 @@ switch ($action) {
                 exit;
             }
         }
-        $result = $controller->addUser($username, $email, $password, $administrator_rights, $full_name, $img_user);
+        $result = $controller->addUser($username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user);
         echo json_encode($result);
         break;
 
@@ -142,15 +131,22 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Bạn chỉ có thể chỉnh sửa thông tin của chính mình']);
             exit;
         }
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID người dùng không hợp lệ']);
+            exit;
+        }
         $username = $_POST['username'] ?? null;
         $email = $_POST['email'] ?? null;
         $password = $_POST['password'] ?? null;
         $administrator_rights = $_POST['administrator_rights'] ?? null;
         $full_name = $_POST['full_name'] ?? null;
+        $phone_number = $_POST['phone_number'] ?? null;
         $img_user = $_FILES['img_user'] ?? null;
 
         if ($img_user && $img_user['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($img_user['error'] !== UPLOAD_ERR_OK) {
+                http_response_code(400);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Lỗi tải lên ảnh: Mã lỗi ' . $img_user['error']
@@ -159,6 +155,7 @@ switch ($action) {
             }
             $validImageTypes = ['image/jpeg', 'image/png', 'image/gif'];
             if (!in_array($img_user['type'], $validImageTypes)) {
+                http_response_code(400);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG, GIF.'
@@ -166,7 +163,7 @@ switch ($action) {
                 exit;
             }
         }
-        $result = $controller->updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $img_user);
+        $result = $controller->updateUser($id, $username, $email, $password, $administrator_rights, $full_name, $phone_number, $img_user);
         echo json_encode($result);
         break;
 
@@ -183,6 +180,11 @@ switch ($action) {
         }
         $data = json_decode(file_get_contents('php://input'), true);
         $id = $data['id'] ?? '';
+        if (empty($id)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID người dùng không hợp lệ']);
+            exit;
+        }
         $result = $controller->deleteUser($id);
         echo json_encode($result);
         break;

@@ -11,7 +11,6 @@
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <nav class="col-md-3 col-lg-2 d-md-block sidebar">
                 <div class="position-sticky pt-3">
                     <h4 class="text-white text-center sidebar-title">🌿 Vườn Cây Thông Minh</h4>
@@ -40,7 +39,6 @@
                 </div>
             </nav>
 
-            <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2 text-success m-0">👤 Quản lý Người Dùng</h1>
@@ -66,7 +64,6 @@
                                 <h5 class="card-title text-success">📋 Danh sách Người Dùng</h5>
                                 <div id="permission-error" class="alert alert-danger d-none">Bạn không có quyền truy cập trang này. Vui lòng đăng nhập với tài khoản admin.</div>
                                 <div class="row g-3" id="account-list">
-                                    <!-- Users will be populated here by JS -->
                                 </div>
                             </div>
                         </div>
@@ -76,7 +73,6 @@
         </div>
     </div>
 
-    <!-- Modal Thêm Người Dùng -->
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -111,6 +107,10 @@
                             <input type="text" class="form-control" id="add-full-name" name="full_name" required>
                         </div>
                         <div class="mb-3">
+                            <label for="add-phone-number" class="form-label">Số Điện Thoại</label>
+                            <input type="tel" class="form-control" id="add-phone-number" name="phone_number">
+                        </div>
+                        <div class="mb-3">
                             <label for="add-img-user" class="form-label">Ảnh Nền</label>
                             <input type="file" class="form-control" id="add-img-user" name="img_user" accept="image/*">
                             <small class="form-text text-muted">Chọn ảnh từ bất kỳ thư mục nào trên máy tính của bạn.</small>
@@ -125,7 +125,6 @@
         </div>
     </div>
 
-    <!-- Modal Sửa Người Dùng -->
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -159,6 +158,10 @@
                         <div class="mb-3">
                             <label for="edit-full-name" class="form-label">Họ và Tên</label>
                             <input type="text" class="form-control" id="edit-full-name" name="full_name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-phone-number" class="form-label">Số Điện Thoại</label>
+                            <input type="tel" class="form-control" id="edit-phone-number" name="phone_number">
                         </div>
                         <div class="mb-3">
                             <label for="edit-img-user" class="form-label">Ảnh Nền (Để trống nếu không đổi)</label>

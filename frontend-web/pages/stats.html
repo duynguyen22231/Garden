@@ -10,7 +10,6 @@
     
     <link rel="stylesheet" href="../css/stats.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../js/stats.js"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -95,7 +94,6 @@
                                         <option value="temperature">Nhiệt độ</option>
                                         <option value="humidity">Độ ẩm không khí</option>
                                         <option value="soil_moisture">Độ ẩm đất</option>
-                                        <option value="light">Ánh sáng</option>
                                         <option value="water_level">Mực nước</option>
                                         <option value="rain">Mưa</option>
                                     </select>
@@ -122,12 +120,6 @@
                             <div class="card-body">
                                 <h5 class="card-title">Độ ẩm đất</h5>
                                 <canvas id="soilMoistureChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Ánh sáng</h5>
-                                <canvas id="lightChart"></canvas>
                             </div>
                         </div>
                         <div class="card">
@@ -168,9 +160,6 @@
                                         <th>Độ ẩm KK TB</th>
                                         <th>Độ ẩm KK Max</th>
                                         <th>Độ ẩm KK Min</th>
-                                        <th>Ánh sáng TB</th>
-                                        <th>Ánh sáng Max</th>
-                                        <th>Ánh sáng Min</th>
                                         <th>Mực nước TB</th>
                                         <th>Mực nước Max</th>
                                         <th>Mực nước Min</th>
@@ -188,5 +177,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/dist/js/bootstrap-icons.min.js"></script>
+    <script src="../js/stats.js"></script>
 </body>
 </html>

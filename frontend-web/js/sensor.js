@@ -31,24 +31,21 @@ function getGardenIdFromUrl() {
 
 async function assignGarden(gardenId) {
     try {
-        // Lấy garden_number
         const data = await apiRequest('sensor.php', 'get_garden_number', 'POST', { garden_id: gardenId });
         const gardenNumber = data.garden_number || 1;
 
-        // Gán vườn với mcu_id="mcu_001"
         await apiRequest('sensor.php', 'save_garden_assignment', 'POST', {
             garden_id: gardenId,
             garden_number: gardenNumber
         });
 
-        // Đảm bảo mcu_id="mcu_001" trong mcu_assignments
-        const macAddress = '94:E6:86:0D:EF:B4'; // MAC của ESP32
+        const macAddress = '94:E6:86:0D:EF:B4';
         await apiRequest('sensor.php', 'get_mcu_id', 'POST', { mac_address: macAddress });
 
         return gardenNumber;
     } catch (error) {
         console.error('Lỗi assignGarden:', error);
-        return 1; // Mặc định là vườn 1 nếu có lỗi
+        return 1;
     }
 }
 
@@ -74,13 +71,11 @@ async function apiRequest(endpoint, action, method = 'POST', data = {}, retries 
                 body: JSON.stringify({ action, ...data })
             };
 
-            console.log('Sending request to:', endpoint);
-            console.log('Request data:', options.body);
+            console.log(`[${action}] Attempt ${attempt + 1} - Sending request to: ${endpoint}`, options.body);
 
             const res = await fetch(`http://192.168.1.123/SmartGarden/backend-api/routes/${endpoint}`, options);
-            
             const responseText = await res.text();
-            console.log('Raw response:', responseText);
+            console.log(`[${action}] Raw response:`, responseText);
 
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${res.status}`);
@@ -92,15 +87,15 @@ async function apiRequest(endpoint, action, method = 'POST', data = {}, retries 
             } catch (jsonError) {
                 throw new Error(`Invalid JSON response: ${responseText}`);
             }
-            
+
             if (!response.success) {
                 throw new Error(response.message || 'Request failed');
             }
-            
+
             return response;
         } catch (error) {
+            console.error(`[${action}] Attempt ${attempt + 1} failed:`, error);
             if (attempt === retries) throw error;
-            console.error(`Attempt ${attempt + 1} failed:`, error);
             await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
         }
     }
@@ -224,6 +219,152 @@ async function updateDeviceStatusUI(statusData, gardenNumber) {
     }
 }
 
+// Lưu ngưỡng cảm biến
+async function saveThreshold() {
+    try {
+        const gardenId = getGardenIdFromUrl();
+        const sensorType = document.getElementById('sensorTypeSelect').value;
+        const minValue = document.getElementById('minValueInput').value;
+        const maxValue = document.getElementById('maxValueInput').value;
+        const emailEnabled = document.getElementById('emailEnabled').checked ? 1 : 0;
+
+        if (!sensorType) {
+            alert('Vui lòng chọn loại cảm biến!');
+            return;
+        }
+
+        if (!minValue && !maxValue) {
+            alert('Vui lòng cung cấp ít nhất một ngưỡng (tối thiểu hoặc tối đa)!');
+            return;
+        }
+
+        // Kiểm tra min_value <= max_value
+        if (minValue && maxValue && parseFloat(minValue) > parseFloat(maxValue)) {
+            alert('Ngưỡng tối thiểu phải nhỏ hơn hoặc bằng ngưỡng tối đa!');
+            return;
+        }
+
+        console.log('Saving threshold:', { garden_id: gardenId, sensor_type: sensorType, min_value: minValue, max_value: maxValue, email_enabled: emailEnabled });
+
+        const response = await apiRequest('sensor.php', 'set_threshold', 'POST', {
+            garden_id: gardenId,
+            sensor_type: sensorType,
+            min_value: minValue,
+            max_value: maxValue,
+            email_enabled: emailEnabled
+        });
+
+        if (response.success) {
+            alert('Đã lưu ngưỡng thành công!');
+            $('#thresholdModal').modal('hide');
+            await displayThresholds(gardenId);
+            // Kích hoạt kiểm tra và gửi email ngay sau khi lưu ngưỡng
+            await checkAndSendAlert(gardenId);
+        } else {
+            alert('Lỗi: ' + (response.message || 'Không thể lưu ngưỡng'));
+        }
+    } catch (error) {
+        console.error('Lỗi khi lưu ngưỡng:', error);
+        alert('Lỗi khi lưu ngưỡng: ' + error.message);
+    }
+}
+
+// Kiểm tra và gửi email cảnh báo sau khi lưu ngưỡng
+async function checkAndSendAlert(gardenId) {
+    try {
+        const response = await apiRequest('sensor.php', 'check_and_send_alert', 'POST', { garden_id: gardenId });
+        if (response.success && response.alert_sent) {
+            alert('Email cảnh báo đã được gửi thành công!');
+        } else if (response.success && !response.alert_sent) {
+            console.log('Không có cảnh báo nào được kích hoạt.');
+        } else {
+            alert('Lỗi khi kiểm tra và gửi cảnh báo: ' + (response.message || 'Lỗi không xác định'));
+        }
+    } catch (error) {
+        console.error('Lỗi khi kiểm tra và gửi cảnh báo:', error);
+        alert('Lỗi khi kiểm tra và gửi cảnh báo: ' + error.message);
+    }
+}
+
+// Hiển thị ngưỡng
+async function displayThresholds(gardenId) {
+    try {
+        const response = await apiRequest('sensor.php', 'get_thresholds', 'POST', { garden_id: gardenId });
+        const thresholdContainer = document.getElementById('threshold-display');
+        
+        if (!thresholdContainer) {
+            console.error('Cannot find threshold-display container');
+            return;
+        }
+
+        const sensorTypeMap = {
+            'soil_moisture': 'Độ ẩm đất',
+            'temperature': 'Nhiệt độ',
+            'humidity': 'Độ ẩm không khí',
+            'water_level_cm': 'Mực nước'
+        };
+
+        if (response.data && response.data.length > 0) {
+            const thresholdsHTML = response.data.map(threshold => `
+                <div class="alert alert-info mb-2">
+                    <p><strong>Cảm biến:</strong> ${sensorTypeMap[threshold.sensor_type] || threshold.sensor_type}</p>
+                    <p><strong>Ngưỡng tối thiểu:</strong> ${threshold.min_value !== null ? threshold.min_value : '--'}</p>
+                    <p><strong>Ngưỡng tối đa:</strong> ${threshold.max_value !== null ? threshold.max_value : '--'}</p>
+                    <p><strong>Gửi email:</strong> ${threshold.email_enabled ? 'Bật' : 'Tắt'}</p>
+                </div>
+            `).join('');
+            thresholdContainer.innerHTML = `<h6>Các ngưỡng đã cài đặt:</h6>${thresholdsHTML}`;
+        } else {
+            thresholdContainer.innerHTML = '<h6>Các ngưỡng đã cài đặt:</h6><p class="text-muted">Chưa có ngưỡng nào được cài đặt.</p>';
+        }
+    } catch (error) {
+        console.error('Lỗi tải ngưỡng:', error);
+    }
+}
+
+// Hiển thị lịch sử cảnh báo
+async function displayAlerts(gardenId) {
+    try {
+        console.log('Calling displayAlerts for gardenId:', gardenId);
+        const response = await apiRequest('sensor.php', 'get_alerts', 'POST', { garden_id: gardenId });
+        console.log('get_alerts response:', response);
+        
+        const alertContainer = document.getElementById('alerts-list');
+        if (!alertContainer) {
+            console.error('Cannot find alerts-list container');
+            return;
+        }
+
+        const sensorTypeMap = {
+            'soil_moisture': 'Độ ẩm đất',
+            'temperature': 'Nhiệt độ',
+            'humidity': 'Độ ẩm không khí',
+            'water_level_cm': 'Mực nước'
+        };
+
+        if (response.data && response.data.length > 0) {
+            const alertsHTML = response.data.map(alert => `
+                <div class="alert alert-warning mb-2">
+                    <p><strong>Cảm biến:</strong> ${sensorTypeMap[alert.sensor_type] || alert.sensor_type}</p>
+                    <p><strong>Cảnh báo:</strong> ${alert.alert_type}</p>
+                    <p><strong>Giá trị:</strong> ${alert.sensor_value}</p>
+                    <p><strong>Thời gian:</strong> ${new Date(alert.created_at).toLocaleString('vi-VN')}</p>
+                    <p><strong>Gửi đến:</strong> ${alert.sent_to_email || 'Không có email'}</p>
+                </div>
+            `).join('');
+            alertContainer.innerHTML = `<h6>Lịch sử cảnh báo:</h6>${alertsHTML}`;
+        } else {
+            alertContainer.innerHTML = '<h6>Lịch sử cảnh báo:</h6><p class="text-muted">Chưa có cảnh báo nào.</p>';
+        }
+    } catch (error) {
+        console.error('Lỗi tải cảnh báo:', error);
+        const alertContainer = document.getElementById('alerts-list');
+        if (alertContainer) {
+            alertContainer.innerHTML = '<h6>Lịch sử cảnh báo:</h6><p class="text-danger">Lỗi tải cảnh báo: ' + error.message + '</p>';
+        }
+    }
+}
+
 async function saveSchedule() {
     try {
         const device = document.getElementById('deviceSelect').value;
@@ -232,19 +373,16 @@ async function saveSchedule() {
         const endTime = document.getElementById('endTimeInput').value;
         const selectedDate = document.getElementById('dateInput').value;
         const gardenId = getGardenIdFromUrl();
-        const mcuId = 'mcu_001'; // Sử dụng mcu_id cố định cho một ESP32
+        const mcuId = 'mcu_001';
 
-        // Validate required fields
         if (!device || !startTime || !selectedDate) {
             alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
             return;
         }
 
-        // Format times to HH:MM:SS
         const formattedStartTime = startTime + ':00';
         const formattedEndTime = endTime ? endTime + ':00' : '';
 
-        // Validate time format (HH:MM)
         if (!/^[0-2][0-9]:[0-5][0-9]$/.test(startTime)) {
             alert('Thời gian bắt đầu không hợp lệ (HH:MM)');
             return;
@@ -254,13 +392,11 @@ async function saveSchedule() {
             return;
         }
 
-        // Validate date format (YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
             alert('Ngày không hợp lệ (YYYY-MM-DD)');
             return;
         }
 
-        // Check if schedule is in the past
         const now = new Date();
         const scheduleDateTime = new Date(`${selectedDate}T${formattedStartTime}`);
         if (scheduleDateTime < now) {
@@ -268,11 +404,10 @@ async function saveSchedule() {
             return;
         }
 
-        // Validate time range (at least 1 minute difference, allow AM/PM)
         if (endTime) {
             const startDateTime = new Date(`${selectedDate}T${formattedStartTime}`);
             const endDateTime = new Date(`${selectedDate}T${formattedEndTime}`);
-            const timeDiff = (endDateTime - startDateTime) / 1000 / 60; // Difference in minutes
+            const timeDiff = (endDateTime - startDateTime) / 1000 / 60;
 
             if (timeDiff < 1) {
                 alert('Thời gian kết thúc phải ít nhất 1 phút sau thời gian bắt đầu!');
@@ -280,7 +415,13 @@ async function saveSchedule() {
             }
         }
 
-        // Chuẩn bị dữ liệu đúng định dạng
+        const gardenNumber = await assignGarden(gardenId);
+        const validDevices = gardenNumber === 1 ? ['den1', 'quat1'] : ['den2', 'quat2'];
+        if (!validDevices.includes(device)) {
+            alert(`Thiết bị ${device} không hợp lệ cho vườn số ${gardenNumber}`);
+            return;
+        }
+
         const scheduleData = {
             device_name: device,
             action: action,
@@ -317,7 +458,6 @@ function displaySchedules(gardenId) {
             
             if (response.data && response.data.length > 0) {
                 const schedulesHTML = response.data.map(schedule => {
-                    // Format thời gian từ HH:MM:SS thành HH:MM
                     const startTime = schedule.time ? schedule.time.substring(0, 5) : '';
                     const endTime = schedule.end_time ? schedule.end_time.substring(0, 5) : '';
                     const deviceNameMap = {
@@ -342,9 +482,9 @@ function displaySchedules(gardenId) {
                         </div>
                     `;
                 }).join('');
-                scheduleContainer.innerHTML = schedulesHTML;
+                scheduleContainer.innerHTML = `<h5 class="card-title text-success">📅 Lịch trình tự động</h5>${schedulesHTML}`;
             } else {
-                scheduleContainer.innerHTML = '<p>Chưa có lịch trình nào.</p>';
+                scheduleContainer.innerHTML = `<h5 class="card-title text-success">📅 Lịch trình tự động</h5><p class="text-muted">Chưa có lịch trình nào.</p>`;
             }
         });
 }
@@ -399,12 +539,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const gardenNumber = await assignGarden(gardenId);
         await loadGardenData(gardenId);
         await displaySchedules(gardenId);
+        await displayAlerts(gardenId);
+        await displayThresholds(gardenId);
         populateDeviceOptionsByGarden(gardenNumber);
 
-        // Periodically refresh sensor data and schedules every 30 seconds
         setInterval(async () => {
             await loadGardenData(gardenId);
             await displaySchedules(gardenId);
-        }, 30000); // 30 seconds
+            await displayAlerts(gardenId);
+            await displayThresholds(gardenId);
+        }, 5000); 
     }
 });

@@ -47,7 +47,7 @@
                 <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <div>
                         <h1 class="h2 text-success m-0" id="garden-title">🌱 Giám Sát & Điều Khiển</h1>
-                        <p class="text-muted small" id="current-time">Cập nhật: 10:49 PM +07, Thứ Sáu, 18/07/2025</p>
+                        <p class="text-muted small" id="current-time">Cập nhật: 01:10 AM +07, Thứ Sáu, 25/07/2025</p>
                     </div>
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -60,8 +60,6 @@
                         </ul>
                     </div>
                 </div>
-
-                <div id="alert-container"></div>
 
                 <!-- Sensor Data -->
                 <div class="card mb-3">
@@ -141,64 +139,111 @@
                     </div>
                 </div>
 
-                <!-- Alerts -->
+                <!-- Alerts and Thresholds -->
                 <div class="card mb-3">
                     <div class="card-body" id="alert-container">
-                        <h5 class="card-title text-success">🚨 Cảnh báo</h5>
-                        <p class="text-muted text-center">Đang tải cảnh báo...</p>
+                        <h5 class="card-title text-success">🚨 Cảnh báo & Ngưỡng</h5>
+                        <button class="btn btn-primary mt-3 mb-3" data-bs-toggle="modal" data-bs-target="#thresholdModal">Cài đặt ngưỡng</button>
+                        <div id="threshold-display" class="mt-3"></div>
+                        <hr>
+                        <div id="alerts-list" class="mt-3">
+                            <p class="text-muted text-center">Đang tải cảnh báo...</p>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Modal cài đặt ngưỡng -->
+                <div class="modal fade" id="thresholdModal" tabindex="-1" aria-labelledby="thresholdModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="thresholdModalLabel">⚙️ Cài đặt ngưỡng cảnh báo</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="thresholdForm">
+                                    <div class="mb-3">
+                                        <label for="sensorTypeSelect" class="form-label"><span class="text-danger">*</span> Loại cảm biến</label>
+                                        <select class="form-select" id="sensorTypeSelect" required>
+                                            <option value="">Chọn loại cảm biến</option>
+                                            <option value="soil_moisture">Độ ẩm đất</option>
+                                            <option value="temperature">Nhiệt độ</option>
+                                            <option value="humidity">Độ ẩm không khí</option>
+                                            <option value="water_level_cm">Mực nước</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="minValueInput" class="form-label">Ngưỡng tối thiểu</label>
+                                        <input type="number" step="0.1" class="form-control" id="minValueInput">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="maxValueInput" class="form-label">Ngưỡng tối đa</label>
+                                        <input type="number" step="0.1" class="form-control" id="maxValueInput">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-check-label">
+                                            <input type="checkbox" class="form-check-input" id="emailEnabled"> Gửi email cảnh báo
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                <button type="button" class="btn btn-primary" onclick="saveThreshold()">Lưu ngưỡng</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Modal -->
+                <div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="scheduleModalLabel">⏰ Cài đặt giờ tự động</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="scheduleForm">
+                                    <div class="mb-3">
+                                        <label for="deviceSelect" class="form-label"><span class="text-danger">*</span> Thiết bị</label>
+                                        <select class="form-select" id="deviceSelect" required>
+                                            <option value="">Chọn thiết bị</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="actionSelect" class="form-label"><span class="text-danger">*</span> Hành động</label>
+                                        <select class="form-select" id="actionSelect" required>
+                                            <option value="on">Bật</option>
+                                            <option value="off">Tắt</option>
+                                        </select>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label for="startTimeInput" class="form-label"><span class="text-danger">*</span> Từ giờ</label>
+                                            <input type="time" class="form-control" id="startTimeInput" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="endTimeInput" class="form-label">Đến giờ</label>
+                                            <input type="time" class="form-control" id="endTimeInput">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dateInput" class="form-label"><span class="text-danger">*</span> Ngày</label>
+                                        <input type="date" class="form-control" id="dateInput" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Lưu lịch</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
-
-    <!-- Schedule Modal -->
-<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="scheduleModalLabel">⏰ Cài đặt giờ tự động</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="scheduleForm">
-                    <div class="mb-3">
-                        <label for="deviceSelect" class="form-label"><span class="text-danger">*</span> Thiết bị</label>
-                        <select class="form-select" id="deviceSelect" required>
-                            <option value="">Chọn thiết bị</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="actionSelect" class="form-label"><span class="text-danger">*</span> Hành động</label>
-                        <select class="form-select" id="actionSelect" required>
-                            <option value="on">Bật</option>
-                            <option value="off">Tắt</option>
-                        </select>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="startTimeInput" class="form-label"><span class="text-danger">*</span> Từ giờ</label>
-                            <input type="time" class="form-control" id="startTimeInput" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="endTimeInput" class="form-label"><span class="text-danger">*</span> Đến giờ</label>
-                            <input type="time" class="form-control" id="endTimeInput" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="dateInput" class="form-label"><span class="text-danger">*</span> Ngày</label>
-                        <input type="date" class="form-control" id="dateInput" required>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Lưu lịch</button>
-            </div>
-        </div>
-    </div>
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/sensor.js"></script>

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    let temperatureChart, humidityChart, soilMoistureChart, lightChart, waterLevelChart, rainChart, timeChart;
+    let temperatureChart, humidityChart, soilMoistureChart, waterLevelChart, rainChart, timeChart;
     let isAdmin = false;
     let userId = null;
 
@@ -95,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const temperatureCtx = document.getElementById('temperatureChart')?.getContext('2d');
         const humidityCtx = document.getElementById('humidityChart')?.getContext('2d');
         const soilMoistureCtx = document.getElementById('soilMoistureChart')?.getContext('2d');
-        const lightCtx = document.getElementById('lightChart')?.getContext('2d');
         const waterLevelCtx = document.getElementById('waterLevelChart')?.getContext('2d');
         const rainCtx = document.getElementById('rainChart')?.getContext('2d');
         const timeCtx = document.getElementById('timeChart')?.getContext('2d');
@@ -118,14 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (soilMoistureCtx) {
             soilMoistureChart = new Chart(soilMoistureCtx, {
-                type: 'bar',
-                data: { labels: [], datasets: [] },
-                options: { responsive: true }
-            });
-        }
-        
-        if (lightCtx) {
-            lightChart = new Chart(lightCtx, {
                 type: 'bar',
                 data: { labels: [], datasets: [] },
                 options: { responsive: true }
@@ -247,6 +238,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 console.log("Dữ liệu thống kê:", data.data);
+                if (data.data.length === 0 || data.data.every(garden => 
+                    garden.avg_temperature === 0 &&
+                    garden.avg_humidity === 0 &&
+                    garden.avg_soil_moisture === 0 &&
+                    garden.avg_water_level === 0 &&
+                    garden.rain_percentage === 0)) {
+                    showError('Không có dữ liệu thống kê cho vườn đã chọn trong khoảng thời gian này.');
+                    return;
+                }
                 updateCharts(data.data, chartType, timeRange, sensorType);
                 updateStatsTable(data.data);
             } else {
@@ -298,7 +298,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (temperatureChart) temperatureChart.destroy();
         if (humidityChart) humidityChart.destroy();
         if (soilMoistureChart) soilMoistureChart.destroy();
-        if (lightChart) lightChart.destroy();
         if (waterLevelChart) waterLevelChart.destroy();
         if (rainChart) rainChart.destroy();
         if (timeChart) timeChart.destroy();
@@ -481,54 +480,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        const lightLabels = gardenData.map(garden => garden.name || 'Không xác định');
-        const lightDatasets = [
-            {
-                label: 'Ánh sáng trung bình (lux)',
-                data: gardenData.map(garden => parseFloat(garden.avg_light) || 0),
-                backgroundColor: 'rgba(255, 205, 86, 0.5)',
-                borderColor: 'rgba(255, 205, 86, 1)',
-                borderWidth: 1
-            },
-            {
-                label: 'Ánh sáng tối đa (lux)',
-                data: gardenData.map(garden => parseFloat(garden.max_light) || 0),
-                backgroundColor: 'rgba(255, 159, 64, 0.5)',
-                borderColor: 'rgba(255, 159, 64, 1)',
-                borderWidth: 1
-            },
-            {
-                label: 'Ánh sáng tối thiểu (lux)',
-                data: gardenData.map(garden => parseFloat(garden.min_light) || 0),
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }
-        ];
-        
-        const lightCtx = document.getElementById('lightChart')?.getContext('2d');
-        if (lightCtx && (sensorType === 'all' || sensorType === 'light')) {
-            lightChart = new Chart(lightCtx, {
-                type: chartType,
-                data: {
-                    labels: lightLabels,
-                    datasets: lightDatasets
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: { display: true, text: 'Thống kê ánh sáng' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Ánh sáng (lux)' }
-                        }
-                    }
-                }
-            });
-        }
-
         const waterLevelLabels = gardenData.map(garden => garden.name || 'Không xác định');
         const waterLevelDatasets = [
             {
@@ -612,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        if (gardenData.length > 0 && gardenData[0].monthly_stats) {
+        if (gardenData.length > 0 && gardenData[0].monthly_stats && gardenData[0].monthly_stats.length > 0) {
             const timeData = gardenData[0].monthly_stats;
             let groupedData = [];
             
@@ -628,7 +579,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             avg_temperature: 0,
                             avg_soil_moisture: 0,
                             avg_humidity: 0,
-                            avg_light: 0,
                             avg_water_level: 0,
                             rain_percentage: 0,
                             count: 0
@@ -638,7 +588,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     quarters[yearQuarter].avg_temperature += parseFloat(entry.avg_temperature) || 0;
                     quarters[yearQuarter].avg_soil_moisture += parseFloat(entry.avg_soil_moisture) || 0;
                     quarters[yearQuarter].avg_humidity += parseFloat(entry.avg_humidity) || 0;
-                    quarters[yearQuarter].avg_light += parseFloat(entry.avg_light) || 0;
                     quarters[yearQuarter].avg_water_level += parseFloat(entry.avg_water_level) || 0;
                     quarters[yearQuarter].rain_percentage += parseFloat(entry.rain_percentage) || 0;
                     quarters[yearQuarter].count += 1;
@@ -649,7 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     avg_temperature: quarters[key].avg_temperature / quarters[key].count,
                     avg_soil_moisture: quarters[key].avg_soil_moisture / quarters[key].count,
                     avg_humidity: quarters[key].avg_humidity / quarters[key].count,
-                    avg_light: quarters[key].avg_light / quarters[key].count,
                     avg_water_level: quarters[key].avg_water_level / quarters[key].count,
                     rain_percentage: quarters[key].rain_percentage / quarters[key].count
                 }));
@@ -663,7 +611,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             avg_temperature: 0,
                             avg_soil_moisture: 0,
                             avg_humidity: 0,
-                            avg_light: 0,
                             avg_water_level: 0,
                             rain_percentage: 0,
                             count: 0
@@ -673,7 +620,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     years[year].avg_temperature += parseFloat(entry.avg_temperature) || 0;
                     years[year].avg_soil_moisture += parseFloat(entry.avg_soil_moisture) || 0;
                     years[year].avg_humidity += parseFloat(entry.avg_humidity) || 0;
-                    years[year].avg_light += parseFloat(entry.avg_light) || 0;
                     years[year].avg_water_level += parseFloat(entry.avg_water_level) || 0;
                     years[year].rain_percentage += parseFloat(entry.rain_percentage) || 0;
                     years[year].count += 1;
@@ -684,7 +630,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     avg_temperature: years[key].avg_temperature / years[key].count,
                     avg_soil_moisture: years[key].avg_soil_moisture / years[key].count,
                     avg_humidity: years[key].avg_humidity / years[key].count,
-                    avg_light: years[key].avg_light / years[key].count,
                     avg_water_level: years[key].avg_water_level / years[key].count,
                     rain_percentage: years[key].rain_percentage / years[key].count
                 }));
@@ -694,7 +639,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     avg_temperature: parseFloat(entry.avg_temperature) || 0,
                     avg_soil_moisture: parseFloat(entry.avg_soil_moisture) || 0,
                     avg_humidity: parseFloat(entry.avg_humidity) || 0,
-                    avg_light: parseFloat(entry.avg_light) || 0,
                     avg_water_level: parseFloat(entry.avg_water_level) || 0,
                     rain_percentage: parseFloat(entry.rain_percentage) || 0
                 }));
@@ -734,17 +678,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     yAxisID: 'y1'
                 });
             }
-            if (sensorType === 'all' || sensorType === 'light') {
-                timeDatasets.push({
-                    label: 'Ánh sáng trung bình (lux)',
-                    data: groupedData.map(entry => entry.avg_light),
-                    backgroundColor: 'rgba(255, 205, 86, 0.5)',
-                    borderColor: 'rgba(255, 205, 86, 1)',
-                    borderWidth: 1,
-                    type: 'line',
-                    yAxisID: 'y2'
-                });
-            }
             if (sensorType === 'all' || sensorType === 'water_level') {
                 timeDatasets.push({
                     label: 'Mực nước trung bình (cm)',
@@ -753,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1,
                     type: 'line',
-                    yAxisID: 'y3'
+                    yAxisID: 'y2'
                 });
             }
             if (sensorType === 'all' || sensorType === 'rain') {
@@ -814,12 +747,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             y2: {
                                 position: 'right',
                                 beginAtZero: true,
-                                title: { display: true, text: 'Ánh sáng (lux)' },
-                                grid: { drawOnChartArea: false }
-                            },
-                            y3: {
-                                position: 'right',
-                                beginAtZero: true,
                                 title: { display: true, text: 'Mực nước (cm)' },
                                 grid: { drawOnChartArea: false }
                             }
@@ -827,6 +754,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             }
+        } else {
+            console.warn('Không có dữ liệu thống kê theo tháng để vẽ biểu đồ thời gian');
+            showError('Không có dữ liệu thống kê theo tháng cho vườn đã chọn.');
         }
     }
 
@@ -847,9 +777,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td>${(parseFloat(garden.avg_humidity) || 0).toFixed(1)}</td>
                         <td>${(parseFloat(garden.max_humidity) || 0).toFixed(1)}</td>
                         <td>${(parseFloat(garden.min_humidity) || 0).toFixed(1)}</td>
-                        <td>${(parseFloat(garden.avg_light) || 0).toFixed(0)}</td>
-                        <td>${(parseFloat(garden.max_light) || 0).toFixed(0)}</td>
-                        <td>${(parseFloat(garden.min_light) || 0).toFixed(0)}</td>
                         <td>${(parseFloat(garden.avg_water_level) || 0).toFixed(1)}</td>
                         <td>${(parseFloat(garden.max_water_level) || 0).toFixed(1)}</td>
                         <td>${(parseFloat(garden.min_water_level) || 0).toFixed(1)}</td>
